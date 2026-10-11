@@ -1,0 +1,153 @@
+<UserControl x:Class="ParticleEmitterDesigner.Views.ParameterInspectorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:ParticleEmitterDesigner.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="640" d:DesignWidth="300">
+    <UserControl.Resources>
+        <controls:ColorRampBrushConverter x:Key="RampBrush" />
+    </UserControl.Resources>
+    <Grid>
+        <!-- Empty-state overlay -->
+        <TextBlock Text="No document open."
+                   Foreground="{StaticResource TextSecondary}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Shell.ActiveDocument}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <TabControl Style="{StaticResource DarkTabControl}">
+            <TabItem Header="Emitter" Style="{StaticResource DarkTabItem}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,0">
+                    <StackPanel>
+                        <controls:PropertySlider Label="Max Particles" Minimum="500" Maximum="5000"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.MaxParticles}" />
+                        <controls:PropertySlider Label="Emission Rate (per sec)" Minimum="0" Maximum="5000"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.EmissionRate}" />
+                        <TextBlock Text="Shape" Foreground="{StaticResource TextSecondary}"
+                                   FontSize="11" Margin="0,4,0,2" />
+                        <ComboBox Style="{StaticResource DarkComboBox}"
+                                  ItemsSource="{Binding Shell.ActiveDocument.EmitterShapes}"
+                                  SelectedItem="{Binding Shell.ActiveDocument.Settings.Shape}"
+                                  Margin="0,0,0,4" />
+                        <controls:PropertySlider Label="Emitter Size" Minimum="0" Maximum="400"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.EmitterSize}" />
+                        <controls:PropertySlider Label="Burst Count" Minimum="1" Maximum="2000"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.BurstCount}" />
+                        <controls:PropertySlider Label="Min Lifespan (s)" Minimum="0.1" Maximum="10"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.LifespanMin}" />
+                        <controls:PropertySlider Label="Max Lifespan (s)" Minimum="0.1" Maximum="10"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.LifespanMax}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Physics" Style="{StaticResource DarkTabItem}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,0">
+                    <StackPanel>
+                        <controls:PropertySlider Label="Min Speed" Minimum="0" Maximum="1000"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.SpeedMin}" />
+                        <controls:PropertySlider Label="Max Speed" Minimum="0" Maximum="1000"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.SpeedMax}" />
+                        <controls:PropertySlider Label="Direction (deg)" Minimum="0" Maximum="360"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.Direction}" />
+                        <controls:PropertySlider Label="Spread Angle (deg)" Minimum="0" Maximum="360"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.SpreadAngle}" />
+                        <controls:PropertySlider Label="Angular Velocity (deg/s)" Minimum="-720" Maximum="720"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.AngularVelocity}" />
+                        <controls:PropertySlider Label="Gravity X" Minimum="-1000" Maximum="1000"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.GravityX}" />
+                        <controls:PropertySlider Label="Gravity Y" Minimum="-1000" Maximum="1000"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.GravityY}" />
+                        <controls:PropertySlider Label="Drag" Minimum="0" Maximum="5"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.Drag}" />
+                        <controls:PropertySlider Label="Turbulence Strength" Minimum="0" Maximum="600"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.TurbulenceStrength}" />
+                        <controls:PropertySlider Label="Turbulence Frequency" Minimum="0" Maximum="1"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.TurbulenceFrequency}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Color / Blend" Style="{StaticResource DarkTabItem}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,0">
+                    <StackPanel>
+                        <TextBlock Text="Blend Mode" Foreground="{StaticResource TextSecondary}"
+                                   FontSize="11" Margin="0,4,0,2" />
+                        <ComboBox Style="{StaticResource DarkComboBox}"
+                                  ItemsSource="{Binding Shell.ActiveDocument.BlendModes}"
+                                  SelectedItem="{Binding Shell.ActiveDocument.Settings.BlendMode}"
+                                  Margin="0,0,0,4" />
+
+                        <controls:PropertySlider Label="Start Size Min" Minimum="0" Maximum="200"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.StartSizeMin}" />
+                        <controls:PropertySlider Label="Start Size Max" Minimum="0" Maximum="200"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.StartSizeMax}" />
+                        <controls:PropertySlider Label="End Size" Minimum="0" Maximum="200"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.EndSize}" />
+                        <controls:PropertySlider Label="Frame Count" Minimum="1" Maximum="64"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.FrameCount}" />
+                        <controls:PropertySlider Label="Animation Speed" Minimum="0" Maximum="10"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.AnimationSpeed}" />
+
+                        <TextBlock Text="COLOR RAMP (OVER LIFETIME)" Style="{StaticResource GroupHeader}" />
+
+                        <Border Height="22" CornerRadius="3" Margin="0,2,0,8"
+                                BorderBrush="{StaticResource PanelBorder}" BorderThickness="1">
+                            <Border.Background>
+                                <MultiBinding Converter="{StaticResource RampBrush}">
+                                    <Binding Path="Shell.ActiveDocument.Settings.StartR" />
+                                    <Binding Path="Shell.ActiveDocument.Settings.StartG" />
+                                    <Binding Path="Shell.ActiveDocument.Settings.StartB" />
+                                    <Binding Path="Shell.ActiveDocument.Settings.StartA" />
+                                    <Binding Path="Shell.ActiveDocument.Settings.MidR" />
+                                    <Binding Path="Shell.ActiveDocument.Settings.MidG" />
+                                    <Binding Path="Shell.ActiveDocument.Settings.MidB" />
+                                    <Binding Path="Shell.ActiveDocument.Settings.MidA" />
+                                    <Binding Path="Shell.ActiveDocument.Settings.EndR" />
+                                    <Binding Path="Shell.ActiveDocument.Settings.EndG" />
+                                    <Binding Path="Shell.ActiveDocument.Settings.EndB" />
+                                    <Binding Path="Shell.ActiveDocument.Settings.EndA" />
+                                </MultiBinding>
+                            </Border.Background>
+                        </Border>
+
+                        <TextBlock Text="Start" Foreground="{StaticResource TextSecondary}"
+                                   FontSize="11" Margin="0,0,0,0" />
+                        <controls:ColorField
+                            R="{Binding Shell.ActiveDocument.Settings.StartR}"
+                            G="{Binding Shell.ActiveDocument.Settings.StartG}"
+                            B="{Binding Shell.ActiveDocument.Settings.StartB}"
+                            A="{Binding Shell.ActiveDocument.Settings.StartA}" />
+
+                        <TextBlock Text="Mid (50% age)" Foreground="{StaticResource TextSecondary}"
+                                   FontSize="11" Margin="0,6,0,0" />
+                        <controls:ColorField
+                            R="{Binding Shell.ActiveDocument.Settings.MidR}"
+                            G="{Binding Shell.ActiveDocument.Settings.MidG}"
+                            B="{Binding Shell.ActiveDocument.Settings.MidB}"
+                            A="{Binding Shell.ActiveDocument.Settings.MidA}" />
+
+                        <TextBlock Text="End" Foreground="{StaticResource TextSecondary}"
+                                   FontSize="11" Margin="0,6,0,0" />
+                        <controls:ColorField
+                            R="{Binding Shell.ActiveDocument.Settings.EndR}"
+                            G="{Binding Shell.ActiveDocument.Settings.EndG}"
+                            B="{Binding Shell.ActiveDocument.Settings.EndB}"
+                            A="{Binding Shell.ActiveDocument.Settings.EndA}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

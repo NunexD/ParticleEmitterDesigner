@@ -1,0 +1,113 @@
+﻿<Window x:Class="ParticleEmitterDesigner.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ad="https://github.com/Dirkster99/AvalonDock"
+        xmlns:avd="clr-namespace:AvalonDock.Themes;assembly=AvalonDock.Themes.VS2013"
+        xmlns:services="clr-namespace:ParticleEmitterDesigner.Services"
+        xmlns:vm="clr-namespace:ParticleEmitterDesigner.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        Title="Particle Emitter Designer — Godot 4"
+        Height="900" Width="1500"
+        Background="{StaticResource WindowBg}">
+
+    <Window.InputBindings>
+        <KeyBinding Key="D0" Modifiers="Control" Command="{Binding ResetViewportCommand}" />
+    </Window.InputBindings>
+
+    <DockPanel>
+
+        <!-- ===================== Menu ===================== -->
+        <Menu DockPanel.Dock="Top" Background="{StaticResource PanelBg}"
+              Foreground="{StaticResource TextPrimary}">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New Emitter" Click="OnNewDocumentClick" InputGestureText="Ctrl+N" />
+                <MenuItem Header="_Open Emitter…" Click="OnOpenDocumentClick" InputGestureText="Ctrl+O" />
+                <Separator />
+                <MenuItem Header="_Save" Click="OnSaveDocumentClick" InputGestureText="Ctrl+S" />
+                <MenuItem Header="Save _As…" Click="OnSaveDocumentAsClick" />
+                <Separator />
+                <MenuItem Header="Load _Sprite Sheet…" Click="OnLoadSpriteClick" />
+                <MenuItem Header="Reset Sprite to Procedural" Click="OnResetSpriteClick" />
+                <Separator />
+                <MenuItem Header="Export to _Godot 4 (.tres)…" Click="OnExportGodotClick" />
+                <MenuItem Header="Export Sprite Sheet (_8x8 .png)…" Click="OnExportSpriteSheetClick" />
+                <Separator />
+                <MenuItem Header="E_xit" Click="OnExitClick" />
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="Save Workspace Layout" Command="{Binding SaveWorkspaceLayoutCommand}" />
+                <MenuItem Header="Restore Workspace Layout" Command="{Binding RestoreWorkspaceLayoutCommand}" />
+                <MenuItem Header="Reset Workspace Layout" Command="{Binding ResetWorkspaceLayoutCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <!-- ===================== Toolbar ===================== -->
+        <Border DockPanel.Dock="Top" Background="{StaticResource PanelBg}"
+                BorderBrush="{StaticResource PanelBorder}" BorderThickness="0,0,0,1"
+                Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="New" Click="OnNewDocumentClick" />
+                <Button Content="Open" Click="OnOpenDocumentClick" />
+                <Button Content="Save" Click="OnSaveDocumentClick" />
+
+                <Border Width="1" Height="20" Margin="6,0"
+                        Background="{StaticResource PanelBorder}" VerticalAlignment="Center" />
+
+                <Button Content="Play" Command="{Binding ActiveDocument.PlayCommand}" />
+                <Button Content="Pause" Command="{Binding ActiveDocument.PauseCommand}" />
+                <Button Content="Reset" Command="{Binding ActiveDocument.ResetCommand}" />
+                <Button Content="Burst" Command="{Binding ActiveDocument.BurstCommand}" />
+
+                <Border Width="1" Height="20" Margin="6,0"
+                        Background="{StaticResource PanelBorder}" VerticalAlignment="Center" />
+
+                <Button Content="Export .tres" Click="OnExportGodotClick" />
+                <Button Content="Export .png" Click="OnExportSpriteSheetClick" />
+
+                <Border Width="1" Height="20" Margin="6,0"
+                        Background="{StaticResource PanelBorder}" VerticalAlignment="Center" />
+
+                <Button Content="Save Layout" Command="{Binding SaveWorkspaceLayoutCommand}" />
+                <Button Content="Reset Layout" Command="{Binding ResetWorkspaceLayoutCommand}" />
+            </StackPanel>
+        </Border>
+
+
+        <!-- ===================== Dockable workspace ===================== -->
+        <ad:DockingManager x:Name="Dock"
+                           DocumentsSource="{Binding Documents}"
+                           AnchorablesSource="{Binding Tools}"
+                           ActiveContent="{Binding ActiveDocument, Mode=TwoWay}"
+                           DocumentClosing="OnDocumentClosing">
+
+            <ad:DockingManager.Theme>
+                <avd:Vs2013DarkTheme />
+            </ad:DockingManager.Theme>
+
+            <ad:DockingManager.LayoutUpdateStrategy>
+                <services:LayoutInitializer />
+            </ad:DockingManager.LayoutUpdateStrategy>
+
+            <ad:DockingManager.LayoutItemContainerStyle>
+                <Style TargetType="{x:Type ad:LayoutItem}">
+                    <Setter Property="Title" Value="{Binding Model.Content.Title}" />
+                    <Setter Property="ContentId" Value="{Binding Model.ContentId}" />
+                </Style>
+            </ad:DockingManager.LayoutItemContainerStyle>
+
+            <ad:LayoutRoot>
+                <ad:LayoutPanel Orientation="Horizontal">
+                    <ad:LayoutAnchorablePane Name="LeftPane" DockMinWidth="300" />
+                    <ad:LayoutPanel Orientation="Vertical">
+                        <ad:LayoutDocumentPane />
+                        <ad:LayoutAnchorablePane Name="BottomPane" DockMinHeight="200" />
+                    </ad:LayoutPanel>
+                    <ad:LayoutAnchorablePane Name="RightPane" DockMinWidth="300" />
+                </ad:LayoutPanel>
+            </ad:LayoutRoot>
+        </ad:DockingManager>
+    </DockPanel>
+</Window>
