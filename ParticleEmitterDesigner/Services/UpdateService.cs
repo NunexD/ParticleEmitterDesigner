@@ -4,7 +4,6 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Windows;
 
@@ -177,29 +176,70 @@ public sealed class UpdateService
         string staging = ResolveStagingDirectory(extractPath);
         string appDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
         string exePath = Path.Combine(appDir, ExecutableName);
-        string scriptPath = Path.Combine(root, "apply-update.ps1");
+        string logPath = Path.Combine(root, "updater.log");
         int pid = Environment.ProcessId;
 
+        // Built as a single line so it survives command-line round-tripping and
+        // can be passed straight to `powershell -Command` (no .ps1 file, so the
+        // default execution policy can't block it). The detached script:
+        //   1. waits until this process (the source PID) is genuinely gone,
+        //   2. retries the overwrite up to 5 times if a file is locked,
+        //   3. relaunches the freshly copied executable,
+        //   4. removes the staging folder only after a successful launch.
+        // Any failure is appended to updater.log for troubleshooting.
         string script =
-            "$ErrorActionPreference = 'SilentlyContinue'\r\n" +
-            $"Wait-Process -Id {pid}\r\n" +
-            "Start-Sleep -Milliseconds 800\r\n" +
-            $"Copy-Item -Path {Quote(staging)}\\* -Destination {Quote(appDir)} -Recurse -Force\r\n" +
-            $"Start-Process -FilePath {Quote(exePath)}\r\n" +
-            $"Remove-Item -LiteralPath {Quote(root)} -Recurse -Force\r\n";
-
-        File.WriteAllText(scriptPath, script, new UTF8Encoding(true));
+            "$ErrorActionPreference='Stop'; " +
+            $"$targetPid={pid}; " +
+            $"$src={PsString(staging)}; " +
+            $"$dst={PsString(appDir)}; " +
+            $"$exe={PsString(exePath)}; " +
+            $"$log={PsString(logPath)}; " +
+            "try { " +
+            "while (Get-Process -Id $targetPid -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 250 }; " +
+            "Start-Sleep -Milliseconds 600; " +
+            "$copied=$false; " +
+            "for ($i=0; $i -lt 5; $i++) { " +
+            "try { Copy-Item -Path \"$src\\*\" -Destination \"$dst\" -Recurse -Force -ErrorAction Stop; $copied=$true; break } " +
+            "catch { Start-Sleep -Milliseconds 500 } " +
+            "}; " +
+            "if (-not $copied) { throw 'Failed to copy update files after 5 attempts.' }; " +
+            "Start-Process -FilePath $exe -WorkingDirectory $dst; " +
+            "Start-Sleep -Milliseconds 500; " +
+            $"Remove-Item -LiteralPath {PsString(root)} -Recurse -Force -ErrorAction SilentlyContinue " +
+            "} catch { " +
+            "try { \"$(Get-Date -Format o) $($_.Exception.Message)\" | Add-Content -LiteralPath $log } catch {} " +
+            "}";
 
         var psi = new ProcessStartInfo
         {
             FileName = "powershell.exe",
-            Arguments = $"-NoProfile -ExecutionPolicy Bypass -File {Quote(scriptPath)}",
-            UseShellExecute = true,
+            UseShellExecute = false,
             CreateNoWindow = true,
             WindowStyle = ProcessWindowStyle.Hidden
         };
 
-        Process.Start(psi);
+        // ArgumentList quotes the script argument (and its embedded double quotes)
+        // for the OS command line, so paths with spaces survive intact.
+        psi.ArgumentList.Add("-ExecutionPolicy");
+        psi.ArgumentList.Add("Bypass");
+        psi.ArgumentList.Add("-NoProfile");
+        psi.ArgumentList.Add("-WindowStyle");
+        psi.ArgumentList.Add("Hidden");
+        psi.ArgumentList.Add("-Command");
+        psi.ArgumentList.Add(script);
+
+        try
+        {
+            Process.Start(psi);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Could not start the updater.\n{ex.Message}",
+                "Check for Updates", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
         Application.Current?.Shutdown();
     }
 
@@ -278,8 +318,13 @@ public sealed class UpdateService
         return true;
     }
 
-    /// <summary>Single-quotes a PowerShell literal (doubling embedded quotes).</summary>
-    private static string Quote(string value) => "'" + value.Replace("'", "''") + "'";
+    /// <summary>
+    /// Wraps a value in a PowerShell double-quoted string literal (escaping any
+    /// backticks and double quotes) so paths containing spaces stay a single
+    /// token inside the updater script.
+    /// </summary>
+    private static string PsString(string value) =>
+        "\"" + value.Replace("`", "``").Replace("\"", "`\"") + "\"";
 
     private static HttpClient CreateClient()
     {
