@@ -42,6 +42,11 @@
                 <MenuItem Header="Restore Workspace Layout" Command="{Binding RestoreWorkspaceLayoutCommand}" />
                 <MenuItem Header="Reset Workspace Layout" Command="{Binding ResetWorkspaceLayoutCommand}" />
             </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="Check for Updates..." Command="{Binding CheckForUpdatesCommand}" />
+                <Separator />
+                <MenuItem Header="{Binding CurrentVersionText}" IsEnabled="False" />
+            </MenuItem>
         </Menu>
 
         <!-- ===================== Toolbar ===================== -->

@@ -113,8 +113,9 @@ public sealed class ParticleEmitter
     {
         double dir = _settings.Direction * Math.PI / 180.0;
         double halfSpread = _settings.SpreadAngle * 0.5;
-        double size = Math.Max(0.0, _settings.EmitterSize);
-        double radius = size * 0.5;
+        double radius = Math.Max(0.0, _settings.ShapeRadius);
+        double boxX = Math.Max(0.0, _settings.ShapeBoxExtentsX);
+        double boxY = Math.Max(0.0, _settings.ShapeBoxExtentsY);
 
         double offX = 0;
         double offY = 0;
@@ -123,11 +124,11 @@ public sealed class ParticleEmitter
         double velY;
         double speed = Lerp(_settings.SpeedMin, _settings.SpeedMax, _random.NextDouble());
 
-        switch (_settings.Shape)
+        switch (_settings.EmissionShape)
         {
-            case EmitterShape.CircleArea:
+            case EmissionShapeType.Circle:
             {
-                // Uniform sampling of a filled disk.
+                // Uniform sampling of a filled disk: r = R * sqrt(rand).
                 double phi = _random.NextDouble() * Math.Tau;
                 double rr = radius * Math.Sqrt(_random.NextDouble());
                 offX = Math.Cos(phi) * rr;
@@ -138,8 +139,9 @@ public sealed class ParticleEmitter
                 velY = Math.Sin(phi + jitter) * speed;
                 goto Assign;
             }
-            case EmitterShape.CircleEdge:
+            case EmissionShapeType.Sphere:
             {
+                // Strictly on the ring border: r = R.
                 double phi = _random.NextDouble() * Math.Tau;
                 offX = Math.Cos(phi) * radius;
                 offY = Math.Sin(phi) * radius;
@@ -148,16 +150,16 @@ public sealed class ParticleEmitter
                 velY = Math.Sin(phi + jitter) * speed;
                 goto Assign;
             }
-            case EmitterShape.Box:
+            case EmissionShapeType.Box:
             {
-                offX = (_random.NextDouble() - 0.5) * size;
-                offY = (_random.NextDouble() - 0.5) * size;
+                offX = (_random.NextDouble() - 0.5) * boxX;
+                offY = (_random.NextDouble() - 0.5) * boxY;
                 break;
             }
-            case EmitterShape.Cone:
+            case EmissionShapeType.Cone:
             {
                 // Cone apex at the origin, axis along the configured direction.
-                double dist = _random.NextDouble() * size;
+                double dist = _random.NextDouble() * radius;
                 double coneHalf = halfSpread * Math.PI / 180.0;
                 double crossRadius = dist * Math.Tan(coneHalf);
 
@@ -193,6 +195,9 @@ public sealed class ParticleEmitter
         p.StartSize = (float)Lerp(_settings.StartSizeMin, _settings.StartSizeMax, _random.NextDouble());
         p.EndSize = (float)_settings.EndSize;
 
+        p.ScaleStart = (float)_settings.ScaleStart;
+        p.ScaleEnd = (float)_settings.ScaleEnd;
+
         p.StartR = ToByte(_settings.StartR);
         p.StartG = ToByte(_settings.StartG);
         p.StartB = ToByte(_settings.StartB);
@@ -219,6 +224,12 @@ public sealed class ParticleEmitter
         float dragFactor = 1f - drag * dt;
         if (dragFactor < 0f) dragFactor = 0f;
 
+        float radAccel = (float)_settings.RadialAcceleration;
+        float tanAccel = (float)_settings.TangentialAcceleration;
+        bool hasAccel = radAccel != 0f || tanAccel != 0f;
+        float originX = OriginX;
+        float originY = OriginY;
+
         float turbStrength = (float)_settings.TurbulenceStrength;
         bool turbulence = turbStrength > 0f;
         float turbFreq = (float)_settings.TurbulenceFrequency;
@@ -242,6 +253,27 @@ public sealed class ParticleEmitter
 
             p.VelocityX += gx * dt;
             p.VelocityY += gy * dt;
+
+            if (hasAccel)
+            {
+                // Direction from the emitter origin to the particle.
+                float rx = p.X - originX;
+                float ry = p.Y - originY;
+                float len = MathF.Sqrt(rx * rx + ry * ry);
+                if (len > 1e-4f)
+                {
+                    float inv = 1f / len;
+                    rx *= inv;
+                    ry *= inv;
+
+                    // Tangential is the radial vector rotated 90 degrees.
+                    float tx = -ry;
+                    float ty = rx;
+
+                    p.VelocityX += (rx * radAccel + tx * tanAccel) * dt;
+                    p.VelocityY += (ry * radAccel + ty * tanAccel) * dt;
+                }
+            }
 
             if (turbulence)
             {

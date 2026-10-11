@@ -24,6 +24,12 @@ public struct Particle
     public float StartSize;
     public float EndSize;
 
+    // Size-over-lifetime multiplier, interpolated across the particle's life
+    // (e.g. 1 -> 0 to shrink out of existence). Multiplied against the
+    // interpolated Start/End diameter.
+    public float ScaleStart;
+    public float ScaleEnd;
+
     // Colour ramp (non-premultiplied RGBA, 0-255). Sampled across three stops:
     // Start (t = 0), Mid (t = 0.5) and End (t = 1).
     public byte StartR, StartG, StartB, StartA;
@@ -44,6 +50,16 @@ public struct Particle
         {
             float t = LifeRatio;
             return StartSize + (EndSize - StartSize) * t;
+        }
+    }
+
+    /// <summary>Interpolated size multiplier for the current frame.</summary>
+    public readonly float CurrentScale
+    {
+        get
+        {
+            float t = LifeRatio;
+            return ScaleStart + (ScaleEnd - ScaleStart) * t;
         }
     }
 

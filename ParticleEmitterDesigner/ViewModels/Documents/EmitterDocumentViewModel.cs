@@ -78,7 +78,7 @@ public partial class EmitterDocumentViewModel : ObservableObject
     public Array BlendModes => Enum.GetValues<BlendMode>();
 
     /// <summary>Emission shapes exposed to the inspector combo box.</summary>
-    public Array EmitterShapes => Enum.GetValues<EmitterShape>();
+    public Array EmissionShapes => Enum.GetValues<EmissionShapeType>();
 
     /// <summary>Advances the simulation and refreshes the HUD counters.</summary>
     public void Tick(double dt)

@@ -19,10 +19,16 @@ public partial class EmitterSettings : ObservableObject
     private double _emissionRate = 600;          // particles per second
 
     [ObservableProperty]
-    private EmitterShape _shape = EmitterShape.Point;
+    private EmissionShapeType _emissionShape = EmissionShapeType.Point;
 
     [ObservableProperty]
-    private double _emitterSize = 60;            // diameter / extent of the shape
+    private double _shapeRadius = 50;            // radius of Circle / Sphere / Cone
+
+    [ObservableProperty]
+    private double _shapeBoxExtentsX = 100;      // full width of the Box shape
+
+    [ObservableProperty]
+    private double _shapeBoxExtentsY = 50;       // full height of the Box shape
 
     [ObservableProperty]
     private int _burstCount = 200;               // particles fired by the Burst command
@@ -72,6 +78,12 @@ public partial class EmitterSettings : ObservableObject
     private double _drag = 0;                    // exponential velocity damping per second
 
     [ObservableProperty]
+    private double _radialAcceleration = 0;      // pixels / second^2 along origin -> particle
+
+    [ObservableProperty]
+    private double _tangentialAcceleration = 0;  // pixels / second^2 perpendicular to radial
+
+    [ObservableProperty]
     private double _turbulenceStrength = 0;      // noise-driven velocity perturbation
 
     [ObservableProperty]
@@ -87,6 +99,13 @@ public partial class EmitterSettings : ObservableObject
 
     [ObservableProperty]
     private double _endSize = 2;
+
+    // Multiplier applied to the particle size over its lifetime (0 = invisible).
+    [ObservableProperty]
+    private double _scaleStart = 1.0;
+
+    [ObservableProperty]
+    private double _scaleEnd = 0.0;
 
     // ----- Start colour (RGBA, 0-255) --------------------------------------
 

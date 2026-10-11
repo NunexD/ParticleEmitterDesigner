@@ -34,14 +34,53 @@
                                                  Value="{Binding Shell.ActiveDocument.Settings.MaxParticles}" />
                         <controls:PropertySlider Label="Emission Rate (per sec)" Minimum="0" Maximum="5000"
                                                  Value="{Binding Shell.ActiveDocument.Settings.EmissionRate}" />
-                        <TextBlock Text="Shape" Foreground="{StaticResource TextSecondary}"
+                        <TextBlock Text="Emission Shape" Foreground="{StaticResource TextSecondary}"
                                    FontSize="11" Margin="0,4,0,2" />
                         <ComboBox Style="{StaticResource DarkComboBox}"
-                                  ItemsSource="{Binding Shell.ActiveDocument.EmitterShapes}"
-                                  SelectedItem="{Binding Shell.ActiveDocument.Settings.Shape}"
+                                  ItemsSource="{Binding Shell.ActiveDocument.EmissionShapes}"
+                                  SelectedItem="{Binding Shell.ActiveDocument.Settings.EmissionShape}"
                                   Margin="0,0,0,4" />
-                        <controls:PropertySlider Label="Emitter Size" Minimum="0" Maximum="400"
-                                                 Value="{Binding Shell.ActiveDocument.Settings.EmitterSize}" />
+
+                        <!-- Radius applies to Circle / Sphere / Cone -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Shell.ActiveDocument.Settings.EmissionShape}" Value="Circle">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Shell.ActiveDocument.Settings.EmissionShape}" Value="Sphere">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Shell.ActiveDocument.Settings.EmissionShape}" Value="Cone">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <controls:PropertySlider Label="Shape Radius" Minimum="0" Maximum="400"
+                                                     Value="{Binding Shell.ActiveDocument.Settings.ShapeRadius}" />
+                        </StackPanel>
+
+                        <!-- Box extents apply to Box -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Shell.ActiveDocument.Settings.EmissionShape}" Value="Box">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <controls:PropertySlider Label="Box Extents X" Minimum="0" Maximum="800"
+                                                     Value="{Binding Shell.ActiveDocument.Settings.ShapeBoxExtentsX}" />
+                            <controls:PropertySlider Label="Box Extents Y" Minimum="0" Maximum="800"
+                                                     Value="{Binding Shell.ActiveDocument.Settings.ShapeBoxExtentsY}" />
+                        </StackPanel>
+
                         <controls:PropertySlider Label="Burst Count" Minimum="1" Maximum="2000"
                                                  Value="{Binding Shell.ActiveDocument.Settings.BurstCount}" />
                         <controls:PropertySlider Label="Min Lifespan (s)" Minimum="0.1" Maximum="10"
@@ -71,6 +110,10 @@
                                                  Value="{Binding Shell.ActiveDocument.Settings.GravityY}" />
                         <controls:PropertySlider Label="Drag" Minimum="0" Maximum="5"
                                                  Value="{Binding Shell.ActiveDocument.Settings.Drag}" />
+                        <controls:PropertySlider Label="Radial Acceleration" Minimum="-500" Maximum="500"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.RadialAcceleration}" />
+                        <controls:PropertySlider Label="Tangential Acceleration" Minimum="-500" Maximum="500"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.TangentialAcceleration}" />
                         <controls:PropertySlider Label="Turbulence Strength" Minimum="0" Maximum="600"
                                                  Value="{Binding Shell.ActiveDocument.Settings.TurbulenceStrength}" />
                         <controls:PropertySlider Label="Turbulence Frequency" Minimum="0" Maximum="1"
@@ -95,6 +138,10 @@
                                                  Value="{Binding Shell.ActiveDocument.Settings.StartSizeMax}" />
                         <controls:PropertySlider Label="End Size" Minimum="0" Maximum="200"
                                                  Value="{Binding Shell.ActiveDocument.Settings.EndSize}" />
+                        <controls:PropertySlider Label="Start Scale" Minimum="0.1" Maximum="10"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.ScaleStart}" />
+                        <controls:PropertySlider Label="End Scale" Minimum="0" Maximum="10"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.ScaleEnd}" />
                         <controls:PropertySlider Label="Frame Count" Minimum="1" Maximum="64"
                                                  Value="{Binding Shell.ActiveDocument.Settings.FrameCount}" />
                         <controls:PropertySlider Label="Animation Speed" Minimum="0" Maximum="10"

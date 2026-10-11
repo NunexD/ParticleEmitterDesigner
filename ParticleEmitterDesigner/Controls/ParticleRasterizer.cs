@@ -85,7 +85,8 @@ public static class ParticleRasterizer
 
                 float cx = p.X * sx + ox;
                 float cy = p.Y * sy + oy;
-                float radius = (p.StartSize + (p.EndSize - p.StartSize) * t) * 0.5f * sx;
+                float radius = p.CurrentSize * p.CurrentScale * 0.5f * sx;
+                if (radius <= 0f) continue;
                 if (radius < 0.5f) radius = 0.5f;
 
                 // Sample the three-stop colour ramp (Start -> Mid -> End) at the

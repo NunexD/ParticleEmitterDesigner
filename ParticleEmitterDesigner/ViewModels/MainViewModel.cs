@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ParticleEmitterDesigner.Services;
 using ParticleEmitterDesigner.ViewModels.Documents;
 using ParticleEmitterDesigner.ViewModels.Tools;
 
@@ -14,8 +15,14 @@ namespace ParticleEmitterDesigner.ViewModels;
 /// </summary>
 public partial class MainViewModel : ObservableObject
 {
+    private readonly UpdateService _updateService = new();
+
     [ObservableProperty]
     private EmitterDocumentViewModel? _activeDocument;
+
+    /// <summary>Human-readable running version, shown in the Help menu.</summary>
+    [ObservableProperty]
+    private string _currentVersionText = $"Version {FormatVersion(UpdateService.CurrentVersion)}";
 
     /// <summary>Invoked by the shell to persist the current workspace layout.</summary>
     public Action<string>? OnSaveLayout { get; set; }
@@ -104,4 +111,11 @@ public partial class MainViewModel : ObservableObject
     /// <summary>Resets the active document's viewport zoom/pan (Ctrl+0).</summary>
     [RelayCommand]
     private void ResetViewport() => ActiveDocument?.RequestResetView?.Invoke();
+
+    /// <summary>Queries GitHub Releases and offers an in-app update.</summary>
+    [RelayCommand]
+    private Task CheckForUpdates() => _updateService.CheckForUpdatesAsync();
+
+    private static string FormatVersion(Version version) =>
+        version.Build >= 0 ? version.ToString(3) : version.ToString(2);
 }

@@ -41,6 +41,7 @@ public sealed class ParticleView : FrameworkElement
     private static readonly Brush SpreadFill = MakeBrush(0x4E, 0xA1, 0xFF, 0x33);
     private static readonly Pen AccentPen = MakePen(AccentBrush, 1.5);
     private static readonly Pen SpreadPen = MakePen(MakeBrush(0x4E, 0xA1, 0xFF, 0xAA), 1.2);
+    private static readonly Pen ShapeBoundsPen = MakeDashedPen(MakeBrush(0x4E, 0xA1, 0xFF, 0xCC), 1.2);
     private static readonly Pen HandlePen = MakePen(MakeBrush(0x0D, 0x0F, 0x15), 1.5);
 
     private WriteableBitmap? _bitmap;
@@ -248,6 +249,9 @@ public sealed class ParticleView : FrameworkElement
         double theta = settings.Direction * Math.PI / 180.0;
         double half = settings.SpreadAngle * 0.5 * Math.PI / 180.0;
 
+        // Wireframe bounds matching the selected emission shape.
+        DrawShapeBounds(dc, settings, origin);
+
         // Spread arc (symmetric around the emission direction).
         StreamGeometry arc = BuildArc(origin, SpreadArcRadius, theta - half, theta + half, 40);
         dc.DrawGeometry(null, SpreadPen, arc);
@@ -266,6 +270,55 @@ public sealed class ParticleView : FrameworkElement
         // Origin handle on top.
         dc.DrawEllipse(HandleFill, HandlePen, origin, OriginHandleRadius, OriginHandleRadius);
         dc.DrawEllipse(AccentBrush, null, origin, OriginHandleRadius * 0.4, OriginHandleRadius * 0.4);
+    }
+
+    /// <summary>
+    /// Draws a dashed wireframe matching the active emission shape, centred on
+    /// the emitter origin: a circle for Circle/Sphere, a rectangle for Box and a
+    /// pair of boundary rays for Cone. Dimensions are world-space, so they scale
+    /// with the camera zoom.
+    /// </summary>
+    private void DrawShapeBounds(DrawingContext dc, EmitterSettings settings, Point origin)
+    {
+        double radius = settings.ShapeRadius * _zoom;
+
+        switch (settings.EmissionShape)
+        {
+            case EmissionShapeType.Circle:
+            case EmissionShapeType.Sphere:
+                if (radius > 0.5)
+                {
+                    dc.DrawEllipse(null, ShapeBoundsPen, origin, radius, radius);
+                }
+
+                break;
+
+            case EmissionShapeType.Box:
+            {
+                double w = settings.ShapeBoxExtentsX * _zoom;
+                double h = settings.ShapeBoxExtentsY * _zoom;
+                if (w > 0.5 || h > 0.5)
+                {
+                    var rect = new Rect(
+                        origin.X - w * 0.5, origin.Y - h * 0.5,
+                        w < 0 ? 0 : w, h < 0 ? 0 : h);
+                    dc.DrawRectangle(null, ShapeBoundsPen, rect);
+                }
+
+                break;
+            }
+
+            case EmissionShapeType.Cone:
+                if (radius > 0.5)
+                {
+                    double theta = settings.Direction * Math.PI / 180.0;
+                    double half = settings.SpreadAngle * 0.5 * Math.PI / 180.0;
+                    dc.DrawLine(ShapeBoundsPen, origin, PointOnCircle(origin, radius, theta + half));
+                    dc.DrawLine(ShapeBoundsPen, origin, PointOnCircle(origin, radius, theta - half));
+                }
+
+                break;
+        }
     }
 
     private static StreamGeometry BuildArc(Point center, double radius, double from, double to, int steps)
@@ -501,6 +554,16 @@ public sealed class ParticleView : FrameworkElement
     private static Pen MakePen(Brush brush, double thickness)
     {
         var pen = new Pen(brush, thickness);
+        pen.Freeze();
+        return pen;
+    }
+
+    private static Pen MakeDashedPen(Brush brush, double thickness)
+    {
+        var pen = new Pen(brush, thickness)
+        {
+            DashStyle = new DashStyle(new[] { 4.0, 3.0 }, 0.0)
+        };
         pen.Freeze();
         return pen;
     }

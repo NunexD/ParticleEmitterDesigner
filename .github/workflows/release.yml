@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+# Required by softprops/action-gh-release to create the release with GITHUB_TOKEN.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # Strip the leading "v" so the assembly version matches the tag, which the
+      # in-app updater compares against the GitHub release tag.
+      - name: Derive version
+        id: version
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v', 'V')
+          "value=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Publish
+        run: dotnet publish ParticleEmitterDesigner/ParticleEmitterDesigner.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ steps.version.outputs.value }} -o ./publish
+
+      - name: Zip artifact
+        shell: pwsh
+        run: Compress-Archive -Path ./publish/* -DestinationPath ParticleEmitterDesigner-win-x64.zip -Force
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ParticleEmitterDesigner-win-x64.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

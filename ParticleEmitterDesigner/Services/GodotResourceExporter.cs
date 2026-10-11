@@ -49,8 +49,10 @@ public static class GodotResourceExporter
         double dirY = -Math.Sin(theta);
 
         // Emission shape translation.
-        int shape = MapShape(settings);
-        double radius = settings.EmitterSize * 0.5 / ppu;
+        int shape = MapShape(settings.EmissionShape);
+        double radius = settings.ShapeRadius / ppu;
+        double boxX = settings.ShapeBoxExtentsX * 0.5 / ppu;
+        double boxY = settings.ShapeBoxExtentsY * 0.5 / ppu;
 
         double scaleMin = settings.StartSizeMin / refTex;
         double scaleMax = Math.Max(scaleMin, settings.StartSizeMax / refTex);
@@ -79,6 +81,20 @@ public static class GodotResourceExporter
         sb.AppendLine("gradient = SubResource(\"1_grad\")");
         sb.AppendLine();
 
+        // Size-over-lifetime curve: a two-point linear ramp from ScaleStart to
+        // ScaleEnd, emitted as a CurveTexture for scale_curve.
+        sb.AppendLine("[sub_resource type=\"Curve\" id=\"1_scale\"]");
+        sb.AppendLine($"min_value = {F(Math.Min(settings.ScaleStart, settings.ScaleEnd))}");
+        sb.AppendLine($"max_value = {F(Math.Max(settings.ScaleStart, settings.ScaleEnd))}");
+        sb.AppendLine(
+            $"_data = [Vector2(0, {F(settings.ScaleStart)}), 0.0, 0.0, 0, 0, " +
+            $"Vector2(1, {F(settings.ScaleEnd)}), 0.0, 0.0, 0, 0]");
+        sb.AppendLine("point_count = 2");
+        sb.AppendLine();
+        sb.AppendLine("[sub_resource type=\"CurveTexture\" id=\"1_scaletex\"]");
+        sb.AppendLine("curve = SubResource(\"1_scale\")");
+        sb.AppendLine();
+
         sb.AppendLine("[resource]");
         sb.AppendLine($"emission_shape = {shape}");
         if (shape is 1 or 2)
@@ -87,7 +103,7 @@ public static class GodotResourceExporter
         }
         else if (shape == 3)
         {
-            sb.AppendLine($"emission_box_extents = {Vec(radius, radius, 0)}");
+            sb.AppendLine($"emission_box_extents = {Vec(boxX, boxY, 0)}");
         }
 
         sb.AppendLine($"direction = {Vec(dirX, dirY, 0)}");
@@ -97,10 +113,15 @@ public static class GodotResourceExporter
         sb.AppendLine($"angular_velocity_min = {F(settings.AngularVelocity)}");
         sb.AppendLine($"angular_velocity_max = {F(settings.AngularVelocity)}");
         sb.AppendLine($"gravity = {Vec(settings.GravityX, settings.GravityY, 0)}");
+        sb.AppendLine($"radial_accel_min = {F(settings.RadialAcceleration)}");
+        sb.AppendLine($"radial_accel_max = {F(settings.RadialAcceleration)}");
+        sb.AppendLine($"tangential_accel_min = {F(settings.TangentialAcceleration)}");
+        sb.AppendLine($"tangential_accel_max = {F(settings.TangentialAcceleration)}");
         sb.AppendLine($"damping_min = {F(settings.Drag)}");
         sb.AppendLine($"damping_max = {F(settings.Drag)}");
         sb.AppendLine($"scale_min = {F(scaleMin)}");
         sb.AppendLine($"scale_max = {F(scaleMax)}");
+        sb.AppendLine("scale_curve = SubResource(\"1_scaletex\")");
         // The ramp carries the authored colours, so the base modulation stays
         // white to avoid tinting the gradient twice.
         sb.AppendLine("color = Color(1, 1, 1, 1)");
@@ -119,19 +140,19 @@ public static class GodotResourceExporter
         File.WriteAllText(path, Build(settings, options), new UTF8Encoding(false));
     }
 
-    private static int MapShape(EmitterSettings settings)
+    private static int MapShape(EmissionShapeType shape)
     {
         // Godot ParticleProcessMaterial.EmissionShape:
-        // 0 POINT, 1 SPHERE, 2 SPHERE_SURFACE, 3 BOX, 4 POINTS, 5 DIRECTED_POINTS
-        return settings.Shape switch
+        // 0 = point, 1 = sphere (filled), 2 = sphere surface (ring), 3 = box.
+        return shape switch
         {
-            EmitterShape.Point => 0,
-            EmitterShape.CircleArea => 1,
-            EmitterShape.CircleEdge => 2,
-            EmitterShape.Box => 3,
+            EmissionShapeType.Point => 0,
+            EmissionShapeType.Circle => 1,
+            EmissionShapeType.Sphere => 2,
+            EmissionShapeType.Box => 3,
             // A cone is approximated by a point emitter whose direction + spread
             // already encode the cone's opening angle.
-            EmitterShape.Cone => 0,
+            EmissionShapeType.Cone => 0,
             _ => 0
         };
     }
