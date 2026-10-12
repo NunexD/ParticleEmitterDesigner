@@ -29,5 +29,11 @@
                        Foreground="{StaticResource Accent}"
                        FontFamily="Consolas" Margin="0,2,0,0" />
         </StackPanel>
+
+        <Button Content="Trigger / Replay"
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="12,8"
+                Command="{Binding BurstCommand}"
+                ToolTip="Fire a burst of particles (use for one-shot emitters)" />
     </Grid>
 </UserControl>

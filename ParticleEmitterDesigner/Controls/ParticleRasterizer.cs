@@ -55,27 +55,24 @@ public static class ParticleRasterizer
         };
         bool sampleTexture = appearance == 2;
 
-        // Derive the animation grid from the requested frame count.
-        int frames = 1, cols = 1, rows = 1, cellW = 0, cellH = 0;
+        // Flipbook grid: only custom textures flagged as animated are sub-divided
+        // into a columns x rows grid. Otherwise the whole sheet is a single frame.
+        int cols = 1, rows = 1, totalFrames = 1, cellW = 0, cellH = 0;
         if (sampleTexture)
         {
-            double fc = settings.FrameCount;
-            if (fc < 1.0) fc = 1.0;
-            else if (fc > 4096.0) fc = 4096.0;
+            cellW = sheet!.Width;
+            cellH = sheet.Height;
 
-            frames = (int)Math.Floor(fc + 1e-9);
-            if (frames > 1)
+            if (settings.IsAnimated)
             {
-                cols = (int)Math.Ceiling(Math.Sqrt(frames));
-                rows = cols; // square grid, e.g. 4x4 for 16 frames
-                cellW = sheet!.Width / cols;
-                cellH = sheet.Height / rows;
-                if (cellW < 1) cellW = 1;
-                if (cellH < 1) cellH = 1;
+                cols = Math.Clamp(settings.AnimColumns, 1, 16);
+                rows = Math.Clamp(settings.AnimRows, 1, 16);
+                totalFrames = cols * rows;
+                cellW = Math.Max(1, sheet.Width / cols);
+                cellH = Math.Max(1, sheet.Height / rows);
             }
         }
 
-        float animSpeed = (float)Math.Clamp(settings.AnimationSpeed, 0.0, 1000.0);
         bool additive = settings.BlendMode == BlendMode.Additive;
 
         fixed (byte* spritePtr = sampleTexture ? sheet!.Pixels : SingleWhite)
@@ -109,15 +106,13 @@ public static class ParticleRasterizer
                 int maxY = (int)(cy + radius + 0.999f); if (maxY > clipBottom) maxY = clipBottom;
                 if (minX > maxX || minY > maxY) continue;
 
-                // Which animation frame is this particle showing right now?
+                // Which flipbook cell is this particle showing right now? The
+                // emitter maintains CurrentFrame from the particle's age.
                 int colOff = 0, rowOff = 0;
-                if (sampleTexture && frames > 1)
+                if (sampleTexture && totalFrames > 1)
                 {
-                    // Animation cycles over the particle's lifespan; frames loop.
-                    float fp = t * frames * animSpeed + p.FrameOffset;
-                    int fi = (int)fp;
-                    int frame = fi % frames;
-                    if (frame < 0) frame += frames;
+                    int frame = p.CurrentFrame % totalFrames;
+                    if (frame < 0) frame += totalFrames;
                     colOff = frame % cols;
                     rowOff = frame / cols;
                 }

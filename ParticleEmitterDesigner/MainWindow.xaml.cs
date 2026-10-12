@@ -292,10 +292,28 @@ public partial class MainWindow : Window
 
         try
         {
-            GodotResourceExporter.Export(document.Settings, dialog.FileName);
+            string directory = Path.GetDirectoryName(dialog.FileName) ?? EnsureAssetFolder();
+            string? packed = GodotResourceExporter.PackageTexture(document.Settings, directory);
+            var options = new GodotExportOptions
+            {
+                TexturePath = packed is null ? string.Empty : $"res://{packed}"
+            };
+
+            GodotResourceExporter.Export(document.Settings, dialog.FileName, options);
             _viewModel.PresetBrowser.RefreshCommand.Execute(null);
-            MessageBox.Show(this, $"Exported Godot 4 material to:\n{dialog.FileName}",
-                "Export to Godot 4", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            string message = $"Exported Godot 4 material to:\n{dialog.FileName}";
+            if (packed is not null)
+            {
+                message += $"\n\nPackaged texture:\n{Path.Combine(directory, packed)}";
+            }
+            if (document.Settings.EmissionMode == Models.EmissionMode.OneShotBurst)
+            {
+                message += "\n\nNote: this is a one-shot emitter. Enable \"One Shot\" " +
+                           "(and set Explosiveness to 1.0) on the GPUParticles2D/CPUParticles2D node.";
+            }
+
+            MessageBox.Show(this, message, "Export to Godot 4", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

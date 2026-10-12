@@ -19,6 +19,9 @@ public partial class EmitterSettings : ObservableObject
     private double _emissionRate = 600;          // particles per second
 
     [ObservableProperty]
+    private EmissionMode _emissionMode = EmissionMode.Continuous;
+
+    [ObservableProperty]
     private EmissionShapeType _emissionShape = EmissionShapeType.Point;
 
     [ObservableProperty]
@@ -31,7 +34,7 @@ public partial class EmitterSettings : ObservableObject
     private double _shapeBoxExtentsY = 50;       // full height of the Box shape
 
     [ObservableProperty]
-    private int _burstCount = 200;               // particles fired by the Burst command
+    private int _burstCount = 50;                // particles fired by the Burst command
 
     // ----- Emitter transform (world space, device-independent pixels) -------
 
@@ -141,13 +144,22 @@ public partial class EmitterSettings : ObservableObject
     [ObservableProperty]
     private double _midA = 255;
 
-    // ----- Sprite-sheet animation ------------------------------------------
+    // ----- Sprite-sheet / flipbook animation -------------------------------
 
     [ObservableProperty]
-    private double _frameCount = 16;             // frames used from the sheet (1 .. 64)
+    private bool _isAnimated;                    // play a custom texture as a flipbook
 
     [ObservableProperty]
-    private double _animationSpeed = 1;          // full animation cycles over a particle's lifetime
+    private int _animColumns = 1;                // sheet columns (1 .. 16)
+
+    [ObservableProperty]
+    private int _animRows = 1;                   // sheet rows (1 .. 16)
+
+    [ObservableProperty]
+    private double _animSpeed = 1.0;             // animation cycles over a particle's lifetime
+
+    [ObservableProperty]
+    private bool _randomInitialFrame;            // desync particles with a random start frame
 
     [ObservableProperty]
     private TextureMode _textureMode = TextureMode.ProceduralSoftGlow;

@@ -33,7 +33,23 @@
                         <controls:PropertySlider Label="Max Particles" Minimum="500" Maximum="5000"
                                                  Value="{Binding Shell.ActiveDocument.Settings.MaxParticles}" />
                         <controls:PropertySlider Label="Emission Rate (per sec)" Minimum="0" Maximum="5000"
-                                                 Value="{Binding Shell.ActiveDocument.Settings.EmissionRate}" />
+                                                 Value="{Binding Shell.ActiveDocument.Settings.EmissionRate}">
+                            <controls:PropertySlider.Style>
+                                <Style TargetType="controls:PropertySlider">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Shell.ActiveDocument.Settings.EmissionMode}" Value="OneShotBurst">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </controls:PropertySlider.Style>
+                        </controls:PropertySlider>
+                        <TextBlock Text="Emission Mode" Foreground="{StaticResource TextSecondary}"
+                                   FontSize="11" Margin="0,4,0,2" />
+                        <ComboBox Style="{StaticResource DarkComboBox}"
+                                  ItemsSource="{Binding Shell.ActiveDocument.EmissionModes}"
+                                  SelectedItem="{Binding Shell.ActiveDocument.Settings.EmissionMode}"
+                                  Margin="0,0,0,4" />
                         <TextBlock Text="Emission Shape" Foreground="{StaticResource TextSecondary}"
                                    FontSize="11" Margin="0,4,0,2" />
                         <ComboBox Style="{StaticResource DarkComboBox}"
@@ -215,10 +231,20 @@
                                    Foreground="{StaticResource TextSecondary}"
                                    FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,4,0,8" />
 
-                        <controls:PropertySlider Label="Frame Count" Minimum="1" Maximum="64"
-                                                 Value="{Binding Shell.ActiveDocument.Settings.FrameCount}" />
+                        <CheckBox Content="Animated Sprite Sheet"
+                                  Foreground="{StaticResource TextPrimary}"
+                                  IsChecked="{Binding Shell.ActiveDocument.Settings.IsAnimated}"
+                                  Margin="0,2,0,2" />
+                        <controls:PropertySlider Label="Columns" Minimum="1" Maximum="16"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.AnimColumns}" />
+                        <controls:PropertySlider Label="Rows" Minimum="1" Maximum="16"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.AnimRows}" />
                         <controls:PropertySlider Label="Animation Speed" Minimum="0" Maximum="10"
-                                                 Value="{Binding Shell.ActiveDocument.Settings.AnimationSpeed}" />
+                                                 Value="{Binding Shell.ActiveDocument.Settings.AnimSpeed}" />
+                        <CheckBox Content="Random Initial Frame"
+                                  Foreground="{StaticResource TextPrimary}"
+                                  IsChecked="{Binding Shell.ActiveDocument.Settings.RandomInitialFrame}"
+                                  Margin="0,4,0,2" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

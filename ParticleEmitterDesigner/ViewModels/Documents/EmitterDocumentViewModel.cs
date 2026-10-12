@@ -88,6 +88,9 @@ public partial class EmitterDocumentViewModel : ObservableObject
     /// <summary>Emission shapes exposed to the inspector combo box.</summary>
     public Array EmissionShapes => Enum.GetValues<EmissionShapeType>();
 
+    /// <summary>Emission modes exposed to the inspector combo box.</summary>
+    public Array EmissionModes => Enum.GetValues<EmissionMode>();
+
     /// <summary>Texture fill modes exposed to the inspector combo box.</summary>
     public Array TextureModes => Enum.GetValues<TextureMode>();
 
@@ -154,9 +157,9 @@ public partial class EmitterDocumentViewModel : ObservableObject
     [RelayCommand]
     private void Reset() => Emitter.Reset();
 
-    /// <summary>Fires a one-frame burst of particles.</summary>
+    /// <summary>Fires a one-shot burst of particles (the "Trigger / Replay" action).</summary>
     [RelayCommand]
-    private void Burst() => Emitter.EmitBurst(Settings.BurstCount);
+    private void Burst() => Emitter.TriggerBurst();
 
     /// <summary>Opens the texture file picker (implemented by the view).</summary>
     [RelayCommand]
@@ -247,6 +250,13 @@ public partial class EmitterDocumentViewModel : ObservableObject
         if (e.PropertyName == nameof(EmitterSettings.MaxParticles))
         {
             Emitter.EnsureCapacity(Settings.MaxParticles);
+        }
+
+        // Switching to one-shot should immediately demonstrate the effect.
+        if (e.PropertyName == nameof(EmitterSettings.EmissionMode)
+            && Settings.EmissionMode == EmissionMode.OneShotBurst)
+        {
+            Emitter.Reset();
         }
 
         IsDirty = true;

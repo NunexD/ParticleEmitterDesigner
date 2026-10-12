@@ -65,7 +65,20 @@ public sealed class ParticleEmitter
         _activeCount = 0;
         _emissionAccumulator = 0;
         _elapsed = 0;
+
+        // One-shot emitters have no continuous stream, so give the user
+        // something to look at by firing a burst immediately on reset.
+        if (_settings.EmissionMode == EmissionMode.OneShotBurst)
+        {
+            EmitBurst(_settings.BurstCount);
+        }
     }
+
+    /// <summary>
+    /// Fires a single <see cref="EmitterSettings.BurstCount"/> burst. This is the
+    /// "Trigger / Replay" action used by one-shot emitters.
+    /// </summary>
+    public void TriggerBurst() => EmitBurst(_settings.BurstCount);
 
     /// <summary>
     /// Immediately spawns <paramref name="count"/> particles (clamped to the
@@ -95,6 +108,13 @@ public sealed class ParticleEmitter
 
     private void Emit(double dt)
     {
+        // One-shot emitters never stream; they only fire when TriggerBurst is
+        // called (or on Reset).
+        if (_settings.EmissionMode == EmissionMode.OneShotBurst)
+        {
+            return;
+        }
+
         int max = Math.Min(_settings.MaxParticles, _pool.Length);
         _emissionAccumulator += _settings.EmissionRate * dt;
 
@@ -213,7 +233,13 @@ public sealed class ParticleEmitter
         p.EndB = ToByte(_settings.EndB);
         p.EndA = ToByte(_settings.EndA);
 
-        p.FrameOffset = (float)(_random.NextDouble() * Math.Max(1.0, _settings.FrameCount));
+        // Flipbook start frame: either the first cell, or a random offset when
+        // the emitter is configured to desync particles.
+        int totalFrames = Math.Clamp(_settings.AnimColumns, 1, 16) * Math.Clamp(_settings.AnimRows, 1, 16);
+        p.FrameOffset = _settings.RandomInitialFrame
+            ? (float)(_random.NextDouble() * totalFrames)
+            : 0f;
+        p.CurrentFrame = 0;
 
         // Initial sprite rotation (degrees -> radians) plus an optional scatter
         // of up to +/- 180 degrees at full randomness. Angular speed is stored
@@ -241,6 +267,12 @@ public sealed class ParticleEmitter
         bool turbulence = turbStrength > 0f;
         float turbFreq = (float)_settings.TurbulenceFrequency;
         double time = _elapsed;
+
+        // Flipbook playback: the active frame is derived from the particle's
+        // normalised age so it advances in lock-step with its lifetime.
+        bool animated = _settings.IsAnimated;
+        int totalFrames = Math.Clamp(_settings.AnimColumns, 1, 16) * Math.Clamp(_settings.AnimRows, 1, 16);
+        float animSpeed = Math.Clamp((float)_settings.AnimSpeed, 0f, 1000f);
 
         int count = _activeCount;
 
@@ -303,6 +335,14 @@ public sealed class ParticleEmitter
             p.Y += p.VelocityY * dt;
 
             p.Rotation += p.AngularVelocity * dt;
+
+            if (animated)
+            {
+                float life = p.Lifespan > 0f ? p.Age / p.Lifespan : 1f;
+                int frame = (int)MathF.Floor(life * totalFrames * animSpeed + p.FrameOffset) % totalFrames;
+                if (frame < 0) frame += totalFrames;
+                p.CurrentFrame = frame;
+            }
         }
 
         _activeCount = count;

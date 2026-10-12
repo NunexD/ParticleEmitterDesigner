@@ -40,6 +40,10 @@ public struct Particle
     // randomised at spawn) so particles don't all begin on frame 0.
     public float FrameOffset;
 
+    // Index of the flipbook cell currently displayed (0 .. TotalFrames-1).
+    // Recomputed by the emitter each frame from the particle's normalised age.
+    public int CurrentFrame;
+
     // Rotation of the particle's texture (radians) and its angular speed
     // (radians / second). Advanced every frame by the emitter.
     public float Rotation;

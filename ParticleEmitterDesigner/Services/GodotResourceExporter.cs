@@ -115,6 +115,22 @@ public static class GodotResourceExporter
         sb.AppendLine($"angle_max = {F(settings.InitialRotation + angleJitter)}");
         sb.AppendLine($"angular_velocity_min = {F(settings.AngularVelocity)}");
         sb.AppendLine($"angular_velocity_max = {F(settings.AngularVelocity)}");
+
+        // Flipbook playback maps directly onto Godot's material animation: a
+        // speed of 1.0 runs the full sheet once over the particle's lifetime,
+        // matching the designer's AnimSpeed semantics. Random start positions
+        // are expressed by spreading the animation offset over 0..1.
+        if (settings.IsAnimated)
+        {
+            sb.AppendLine($"anim_speed_min = {F(Math.Clamp(settings.AnimSpeed, 0.0, 1000.0))}");
+            sb.AppendLine($"anim_speed_max = {F(Math.Clamp(settings.AnimSpeed, 0.0, 1000.0))}");
+            if (settings.RandomInitialFrame)
+            {
+                sb.AppendLine("anim_offset_min = 0.0");
+                sb.AppendLine("anim_offset_max = 1.0");
+            }
+        }
+
         sb.AppendLine($"gravity = {Vec(settings.GravityX, settings.GravityY, 0)}");
         sb.AppendLine($"radial_accel_min = {F(settings.RadialAcceleration)}");
         sb.AppendLine($"radial_accel_max = {F(settings.RadialAcceleration)}");
@@ -141,6 +157,38 @@ public static class GodotResourceExporter
     public static void Export(EmitterSettings settings, string path, GodotExportOptions? options = null)
     {
         File.WriteAllText(path, Build(settings, options), new UTF8Encoding(false));
+    }
+
+    /// <summary>
+    /// Copies the emitter's custom texture into <paramref name="targetDirectory"/>
+    /// so the exported <c>.tres</c> can reference it with a self-contained
+    /// <c>res://</c> path. Returns the copied file name, or <c>null</c> when the
+    /// emitter does not use a custom texture (or it can no longer be found).
+    /// </summary>
+    public static string? PackageTexture(EmitterSettings settings, string targetDirectory)
+    {
+        if (settings.TextureMode != TextureMode.CustomTexture)
+        {
+            return null;
+        }
+
+        string? source = settings.TexturePath;
+        if (string.IsNullOrWhiteSpace(source) || !File.Exists(source))
+        {
+            return null;
+        }
+
+        Directory.CreateDirectory(targetDirectory);
+        string fileName = Path.GetFileName(source!);
+        string destination = Path.Combine(targetDirectory, fileName);
+
+        if (!string.Equals(Path.GetFullPath(source!), Path.GetFullPath(destination),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            File.Copy(source!, destination, overwrite: true);
+        }
+
+        return fileName;
     }
 
     private static int MapShape(EmissionShapeType shape)
