@@ -10,6 +10,11 @@ namespace ParticleEmitterDesigner.Models;
 /// </summary>
 public partial class EmitterSettings : ObservableObject
 {
+    public EmitterSettings()
+    {
+        _scaleCurve.Changed += OnScaleCurveChanged;
+    }
+
     // ----- Emission ---------------------------------------------------------
 
     [ObservableProperty]
@@ -115,6 +120,40 @@ public partial class EmitterSettings : ObservableObject
 
     [ObservableProperty]
     private double _scaleEnd = 0.0;
+
+    // When enabled, the particle's scale-over-lifetime is shaped by ScaleCurve
+    // (a normalised multiplier) on top of the ScaleStart -> ScaleEnd ramp.
+    [ObservableProperty]
+    private bool _useScaleCurve = true;
+
+    private CurveData _scaleCurve = CurveData.Flat();
+
+    /// <summary>
+    /// Scale-over-lifetime multiplier curve. When <see cref="UseScaleCurve"/> is
+    /// true the emitter samples this per particle and multiplies it by the
+    /// <see cref="ScaleStart"/>/<see cref="ScaleEnd"/> base ramp. The default is
+    /// a flat 1.0 curve, i.e. no change to the base ramp.
+    /// </summary>
+    public CurveData ScaleCurve
+    {
+        get => _scaleCurve;
+        set
+        {
+            CurveData incoming = value ?? CurveData.Flat();
+            if (ReferenceEquals(_scaleCurve, incoming))
+            {
+                return;
+            }
+
+            _scaleCurve.Changed -= OnScaleCurveChanged;
+            _scaleCurve = incoming.Clone();
+            _scaleCurve.Changed += OnScaleCurveChanged;
+            OnPropertyChanged(nameof(ScaleCurve));
+        }
+    }
+
+    private void OnScaleCurveChanged(object? sender, EventArgs e) =>
+        OnPropertyChanged(nameof(ScaleCurve));
 
     // ----- Start colour (RGBA, 0-255) --------------------------------------
 

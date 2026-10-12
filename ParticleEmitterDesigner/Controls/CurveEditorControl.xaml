@@ -1,0 +1,29 @@
+<UserControl x:Class="ParticleEmitterDesigner.Controls.CurveEditorControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:ParticleEmitterDesigner.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="210" d:DesignWidth="270">
+    <StackPanel>
+        <Border Background="{StaticResource WindowBg}"
+                BorderBrush="{StaticResource PanelBorder}" BorderThickness="1"
+                CornerRadius="4" Padding="4">
+            <controls:CurveSurface x:Name="Surface" Height="150" />
+        </Border>
+
+        <TextBlock Text="Double-click to add · right-click to remove"
+                   Foreground="{StaticResource TextSecondary}"
+                   FontSize="10" Margin="2,4,0,0" />
+
+        <WrapPanel Margin="0,6,0,0">
+            <Button Content="Linear" FontSize="11" Padding="10,4" Click="OnPresetLinear" />
+            <Button Content="Ease In" FontSize="11" Padding="10,4" Click="OnPresetEaseIn" />
+            <Button Content="Ease Out" FontSize="11" Padding="10,4" Click="OnPresetEaseOut" />
+            <Button Content="Bell" FontSize="11" Padding="10,4" Click="OnPresetBell" />
+            <Button Content="Pop &amp; Fade" FontSize="11" Padding="10,4" Click="OnPresetPopFade" />
+            <Button Content="Reset" FontSize="11" Padding="10,4" Click="OnPresetFlat" />
+        </WrapPanel>
+    </StackPanel>
+</UserControl>

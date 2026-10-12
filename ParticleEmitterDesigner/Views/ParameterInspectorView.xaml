@@ -245,6 +245,14 @@
                                   Foreground="{StaticResource TextPrimary}"
                                   IsChecked="{Binding Shell.ActiveDocument.Settings.RandomInitialFrame}"
                                   Margin="0,4,0,2" />
+
+                        <TextBlock Text="SCALE OVER LIFETIME" Style="{StaticResource GroupHeader}" />
+                        <CheckBox Content="Use Scale Curve"
+                                  Foreground="{StaticResource TextPrimary}"
+                                  IsChecked="{Binding Shell.ActiveDocument.Settings.UseScaleCurve}"
+                                  Margin="0,2,0,4" />
+                        <controls:CurveEditorControl
+                            Curve="{Binding Shell.ActiveDocument.Settings.ScaleCurve}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

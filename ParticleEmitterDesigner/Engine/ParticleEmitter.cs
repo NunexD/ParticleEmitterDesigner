@@ -218,6 +218,12 @@ public sealed class ParticleEmitter
         p.ScaleStart = (float)_settings.ScaleStart;
         p.ScaleEnd = (float)_settings.ScaleEnd;
 
+        // Seed the dynamic scale so a particle drawn before its first Integrate
+        // still has a sensible size.
+        p.CurrentScale = _settings.UseScaleCurve
+            ? _settings.ScaleCurve.Evaluate(0f) * p.ScaleStart
+            : p.ScaleStart;
+
         p.StartR = ToByte(_settings.StartR);
         p.StartG = ToByte(_settings.StartG);
         p.StartB = ToByte(_settings.StartB);
@@ -273,6 +279,11 @@ public sealed class ParticleEmitter
         bool animated = _settings.IsAnimated;
         int totalFrames = Math.Clamp(_settings.AnimColumns, 1, 16) * Math.Clamp(_settings.AnimRows, 1, 16);
         float animSpeed = Math.Clamp((float)_settings.AnimSpeed, 0f, 1000f);
+
+        // Scale-over-lifetime: the curve (when enabled) modulates the
+        // ScaleStart -> ScaleEnd base ramp.
+        bool useScaleCurve = _settings.UseScaleCurve;
+        CurveData? scaleCurve = useScaleCurve ? _settings.ScaleCurve : null;
 
         int count = _activeCount;
 
@@ -336,9 +347,13 @@ public sealed class ParticleEmitter
 
             p.Rotation += p.AngularVelocity * dt;
 
+            float life = p.Lifespan > 0f ? p.Age / p.Lifespan : 1f;
+
+            float baseScale = p.ScaleStart + (p.ScaleEnd - p.ScaleStart) * life;
+            p.CurrentScale = scaleCurve is not null ? scaleCurve.Evaluate(life) * baseScale : baseScale;
+
             if (animated)
             {
-                float life = p.Lifespan > 0f ? p.Age / p.Lifespan : 1f;
                 int frame = (int)MathF.Floor(life * totalFrames * animSpeed + p.FrameOffset) % totalFrames;
                 if (frame < 0) frame += totalFrames;
                 p.CurrentFrame = frame;

@@ -62,15 +62,10 @@ public struct Particle
         }
     }
 
-    /// <summary>Interpolated size multiplier for the current frame.</summary>
-    public readonly float CurrentScale
-    {
-        get
-        {
-            float t = LifeRatio;
-            return ScaleStart + (ScaleEnd - ScaleStart) * t;
-        }
-    }
+    // Dynamic scale multiplier for the current frame. Advanced by the emitter
+    // each tick from the ScaleStart -> ScaleEnd ramp, shaped by the emitter's
+    // scale curve when enabled (see EmitterSettings.ScaleCurve).
+    public float CurrentScale;
 
     /// <summary>
     /// Samples the three-stop colour ramp at the normalised age

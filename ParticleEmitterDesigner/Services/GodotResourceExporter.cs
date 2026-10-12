@@ -81,19 +81,8 @@ public static class GodotResourceExporter
         sb.AppendLine("gradient = SubResource(\"1_grad\")");
         sb.AppendLine();
 
-        // Size-over-lifetime curve: a two-point linear ramp from ScaleStart to
-        // ScaleEnd, emitted as a CurveTexture for scale_curve.
-        sb.AppendLine("[sub_resource type=\"Curve\" id=\"1_scale\"]");
-        sb.AppendLine($"min_value = {F(Math.Min(settings.ScaleStart, settings.ScaleEnd))}");
-        sb.AppendLine($"max_value = {F(Math.Max(settings.ScaleStart, settings.ScaleEnd))}");
-        sb.AppendLine(
-            $"_data = [Vector2(0, {F(settings.ScaleStart)}), 0.0, 0.0, 0, 0, " +
-            $"Vector2(1, {F(settings.ScaleEnd)}), 0.0, 0.0, 0, 0]");
-        sb.AppendLine("point_count = 2");
-        sb.AppendLine();
-        sb.AppendLine("[sub_resource type=\"CurveTexture\" id=\"1_scaletex\"]");
-        sb.AppendLine("curve = SubResource(\"1_scale\")");
-        sb.AppendLine();
+        // Size-over-lifetime curve, emitted as a CurveTexture for scale_curve.
+        AppendScaleCurve(sb, settings);
 
         sb.AppendLine("[resource]");
         sb.AppendLine($"emission_shape = {shape}");
@@ -216,4 +205,114 @@ public static class GodotResourceExporter
 
     private static string RampColor(double r, double g, double b, double a) =>
         $"{F(r / 255.0)}, {F(g / 255.0)}, {F(b / 255.0)}, {F(a / 255.0)}";
+
+    /// <summary>
+    /// Writes the <c>Curve</c> + <c>CurveTexture</c> sub-resources used for
+    /// <c>scale_curve</c>.
+    ///
+    /// When <see cref="EmitterSettings.UseScaleCurve"/> is enabled the curve is
+    /// baked from the current <see cref="EmitterSettings.ScaleCurve"/> with the
+    /// ScaleStart -> ScaleEnd base ramp folded in, so the exported multiplier
+    /// matches the designer's preview. A flat identity curve (the default) is
+    /// treated the same as the disabled mode, producing a two-point ramp.
+    ///
+        // Godot stores each point as: position, left_tangent, right_tangent,
+        // left_mode, right_mode, where the tangents are slopes (dy/dx).
+    /// </summary>
+    private static void AppendScaleCurve(StringBuilder sb, EmitterSettings settings)
+    {
+        double start = settings.ScaleStart;
+        double end = settings.ScaleEnd;
+
+        CurveData? curve = settings.UseScaleCurve ? settings.ScaleCurve : null;
+        bool useCurve = curve is not null && !IsFlatIdentity(curve);
+
+        sb.AppendLine("[sub_resource type=\"Curve\" id=\"1_scale\"]");
+
+        if (!useCurve)
+        {
+            // Two-point ramp from ScaleStart to ScaleEnd. The tangents are the
+            // segment slope (end - start) so the interpolation is truly linear.
+            double slope = end - start;
+            sb.AppendLine($"min_value = {F(Math.Min(start, end))}");
+            sb.AppendLine($"max_value = {F(Math.Max(start, end))}");
+            sb.AppendLine(
+                $"_data = [Vector2(0, {F(start)}), 0.0, {F(slope)}, 0, 0, " +
+                $"Vector2(1, {F(end)}), {F(slope)}, 0.0, 0, 0]");
+            sb.AppendLine("point_count = 2");
+        }
+        else
+        {
+            // Bake the curve with the ScaleStart -> ScaleEnd base ramp folded in
+            // (the engine multiplies the two), matching the designer preview.
+            static double Ramp(double s, double e, double x) => s + (e - s) * x;
+            CurveData source = curve!;
+            double Value(double x) => source.Evaluate((float)x) * Ramp(start, end, x);
+
+            const int intervals = 32;
+            var xs = new double[intervals + 1];
+            var ys = new double[intervals + 1];
+            double minValue = double.MaxValue;
+            double maxValue = double.MinValue;
+            for (int i = 0; i <= intervals; i++)
+            {
+                double x = i / (double)intervals;
+                double y = Value(x);
+                xs[i] = x;
+                ys[i] = y;
+                minValue = Math.Min(minValue, y);
+                maxValue = Math.Max(maxValue, y);
+            }
+
+            if (maxValue - minValue < 1e-4)
+            {
+                minValue -= 0.5;
+                maxValue += 0.5;
+            }
+
+            sb.AppendLine($"min_value = {F(minValue)}");
+            sb.AppendLine($"max_value = {F(maxValue)}");
+
+            var data = new StringBuilder();
+            for (int i = 0; i <= intervals; i++)
+            {
+                double slope = Derivative(Value, xs[i]);
+                if (i > 0)
+                {
+                    data.Append(", ");
+                }
+
+                data.Append($"Vector2({F(xs[i])}, {F(ys[i])}), {F(slope)}, {F(slope)}, 0, 0");
+            }
+
+            sb.AppendLine($"_data = [{data}]");
+            sb.AppendLine($"point_count = {intervals + 1}");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("[sub_resource type=\"CurveTexture\" id=\"1_scaletex\"]");
+        sb.AppendLine("curve = SubResource(\"1_scale\")");
+        sb.AppendLine();
+    }
+
+    private static double Derivative(Func<double, double> f, double x)
+    {
+        const double h = 1e-3;
+        double lo = Math.Max(0.0, x - h);
+        double hi = Math.Min(1.0, x + h);
+        return hi - lo < 1e-9 ? 0.0 : (f(hi) - f(lo)) / (hi - lo);
+    }
+
+    private static bool IsFlatIdentity(CurveData curve)
+    {
+        foreach (CurvePoint point in curve.Points)
+        {
+            if (Math.Abs(point.Y - 1f) > 1e-4)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
