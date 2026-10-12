@@ -110,6 +110,9 @@ public static class GodotResourceExporter
         sb.AppendLine($"spread = {F(settings.SpreadAngle)}");
         sb.AppendLine($"initial_velocity_min = {F(settings.SpeedMin)}");
         sb.AppendLine($"initial_velocity_max = {F(Math.Max(settings.SpeedMin, settings.SpeedMax))}");
+        double angleJitter = Math.Max(0.0, Math.Min(1.0, settings.RotationRandomness)) * 180.0;
+        sb.AppendLine($"angle_min = {F(settings.InitialRotation - angleJitter)}");
+        sb.AppendLine($"angle_max = {F(settings.InitialRotation + angleJitter)}");
         sb.AppendLine($"angular_velocity_min = {F(settings.AngularVelocity)}");
         sb.AppendLine($"angular_velocity_max = {F(settings.AngularVelocity)}");
         sb.AppendLine($"gravity = {Vec(settings.GravityX, settings.GravityY, 0)}");

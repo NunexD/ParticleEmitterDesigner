@@ -43,11 +43,21 @@ public static class ParticleRasterizer
         int falloffMax = Falloff.Length - 1;
 
         SpriteSheet? sheet = sprite;
-        bool textured = sheet != null;
+
+        // Resolve the particle fill mode: 0 = solid circle, 1 = soft glow,
+        // 2 = custom texture. A CustomTexture request falls back to the soft
+        // glow when no sheet has been loaded yet.
+        int appearance = settings.TextureMode switch
+        {
+            TextureMode.CustomTexture when sheet != null => 2,
+            TextureMode.ProceduralCircle => 0,
+            _ => 1,
+        };
+        bool sampleTexture = appearance == 2;
 
         // Derive the animation grid from the requested frame count.
         int frames = 1, cols = 1, rows = 1, cellW = 0, cellH = 0;
-        if (textured)
+        if (sampleTexture)
         {
             double fc = settings.FrameCount;
             if (fc < 1.0) fc = 1.0;
@@ -66,14 +76,12 @@ public static class ParticleRasterizer
         }
 
         float animSpeed = (float)Math.Clamp(settings.AnimationSpeed, 0.0, 1000.0);
-        float rotRad = (float)(settings.AngularVelocity * Math.PI / 180.0);
-        bool rotating = textured && rotRad != 0f;
         bool additive = settings.BlendMode == BlendMode.Additive;
 
-        fixed (byte* spritePtr = textured ? sheet!.Pixels : SingleWhite)
+        fixed (byte* spritePtr = sampleTexture ? sheet!.Pixels : SingleWhite)
         {
-            int sw = textured ? sheet!.Width : 1;
-            int sh = textured ? sheet!.Height : 1;
+            int sw = sampleTexture ? sheet!.Width : 1;
+            int sh = sampleTexture ? sheet!.Height : 1;
 
             for (int i = 0; i < count; i++)
             {
@@ -103,7 +111,7 @@ public static class ParticleRasterizer
 
                 // Which animation frame is this particle showing right now?
                 int colOff = 0, rowOff = 0;
-                if (textured && frames > 1)
+                if (sampleTexture && frames > 1)
                 {
                     // Animation cycles over the particle's lifespan; frames loop.
                     float fp = t * frames * animSpeed + p.FrameOffset;
@@ -117,12 +125,12 @@ public static class ParticleRasterizer
                 int cellOriginX = colOff * cellW;
                 int cellOriginY = rowOff * cellH;
 
+                // Per-particle rotation, advanced by the emitter each frame.
                 float rotCos = 1f, rotSin = 0f;
-                if (rotating)
+                if (sampleTexture && p.Rotation != 0f)
                 {
-                    float rot = p.Age * rotRad;
-                    rotCos = MathF.Cos(rot);
-                    rotSin = MathF.Sin(rot);
+                    rotCos = MathF.Cos(p.Rotation);
+                    rotSin = MathF.Sin(p.Rotation);
                 }
 
                 float invR = 1f / radius;
@@ -139,15 +147,12 @@ public static class ParticleRasterizer
                         float d2 = dx * dx + dy2;
                         if (d2 >= 1f) continue;
 
-                        int fade = Falloff[(int)(d2 * falloffMax)];
-                        if (fade == 0) continue;
-
                         int fragB, fragG, fragR, coverage;
 
-                        if (textured)
+                        if (sampleTexture)
                         {
                             float lx, ly;
-                            if (rotating)
+                            if (rotCos != 1f || rotSin != 0f)
                             {
                                 lx = dx * rotCos + dy * rotSin;
                                 ly = -dx * rotSin + dy * rotCos;
@@ -195,17 +200,33 @@ public static class ParticleRasterizer
                             int sa = (int)(sa0 + (sa1 - sa0) * fy);
 
                             // Tint the (non-premultiplied) ramp colour by the
-                            // sprite colour; coverage folds in sprite alpha and
-                            // the radial falloff.
+                            // sprite colour; the sprite's own alpha provides the
+                            // coverage (so the texture's silhouette is honoured).
                             fragB = (int)(fb * sb / 255f);
                             fragG = (int)(fg * sg / 255f);
                             fragR = (int)(fr * sr / 255f);
-                            coverage = (sa * fade) >> 8;
+                            coverage = sa;
                         }
                         else
                         {
-                            // Soft radial blob: fragment colour = particle colour,
-                            // coverage = radial falloff.
+                            // Procedural blob: fragment colour = ramp colour,
+                            // coverage from the fill mode.
+                            int fade;
+                            if (appearance == 0)
+                            {
+                                // Solid disc with a ~1 px antialiased rim. In
+                                // squared-distance space the rim is roughly
+                                // 2 / radius wide, hence the radius * 0.5 term.
+                                fade = (int)((1f - d2) * radius * 0.5f * 255f);
+                                if (fade > 255) fade = 255;
+                            }
+                            else
+                            {
+                                fade = Falloff[(int)(d2 * falloffMax)];
+                            }
+
+                            if (fade <= 0) continue;
+
                             fragB = (int)fb;
                             fragG = (int)fg;
                             fragR = (int)fr;

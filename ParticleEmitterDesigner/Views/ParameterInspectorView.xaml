@@ -104,6 +104,10 @@
                                                  Value="{Binding Shell.ActiveDocument.Settings.SpreadAngle}" />
                         <controls:PropertySlider Label="Angular Velocity (deg/s)" Minimum="-720" Maximum="720"
                                                  Value="{Binding Shell.ActiveDocument.Settings.AngularVelocity}" />
+                        <controls:PropertySlider Label="Initial Rotation (deg)" Minimum="0" Maximum="360"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.InitialRotation}" />
+                        <controls:PropertySlider Label="Rotation Randomness" Minimum="0" Maximum="1"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.RotationRandomness}" />
                         <controls:PropertySlider Label="Gravity X" Minimum="-1000" Maximum="1000"
                                                  Value="{Binding Shell.ActiveDocument.Settings.GravityX}" />
                         <controls:PropertySlider Label="Gravity Y" Minimum="-1000" Maximum="1000"
@@ -142,10 +146,6 @@
                                                  Value="{Binding Shell.ActiveDocument.Settings.ScaleStart}" />
                         <controls:PropertySlider Label="End Scale" Minimum="0" Maximum="10"
                                                  Value="{Binding Shell.ActiveDocument.Settings.ScaleEnd}" />
-                        <controls:PropertySlider Label="Frame Count" Minimum="1" Maximum="64"
-                                                 Value="{Binding Shell.ActiveDocument.Settings.FrameCount}" />
-                        <controls:PropertySlider Label="Animation Speed" Minimum="0" Maximum="10"
-                                                 Value="{Binding Shell.ActiveDocument.Settings.AnimationSpeed}" />
 
                         <TextBlock Text="COLOR RAMP (OVER LIFETIME)" Style="{StaticResource GroupHeader}" />
 
@@ -192,6 +192,33 @@
                             G="{Binding Shell.ActiveDocument.Settings.EndG}"
                             B="{Binding Shell.ActiveDocument.Settings.EndB}"
                             A="{Binding Shell.ActiveDocument.Settings.EndA}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Rendering" Style="{StaticResource DarkTabItem}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,0">
+                    <StackPanel>
+                        <TextBlock Text="Texture Mode" Foreground="{StaticResource TextSecondary}"
+                                   FontSize="11" Margin="0,4,0,2" />
+                        <ComboBox Style="{StaticResource DarkComboBox}"
+                                  ItemsSource="{Binding Shell.ActiveDocument.TextureModes}"
+                                  SelectedItem="{Binding Shell.ActiveDocument.Settings.TextureMode}"
+                                  Margin="0,0,0,4" />
+
+                        <Button Content="Load Texture…" HorizontalAlignment="Stretch"
+                                Command="{Binding Shell.ActiveDocument.BrowseTextureCommand}" Margin="0,2" />
+                        <Button Content="Use Procedural" HorizontalAlignment="Stretch"
+                                Command="{Binding Shell.ActiveDocument.ClearTextureCommand}" Margin="0,2" />
+
+                        <TextBlock Text="{Binding Shell.ActiveDocument.SpriteFileName}"
+                                   Foreground="{StaticResource TextSecondary}"
+                                   FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,4,0,8" />
+
+                        <controls:PropertySlider Label="Frame Count" Minimum="1" Maximum="64"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.FrameCount}" />
+                        <controls:PropertySlider Label="Animation Speed" Minimum="0" Maximum="10"
+                                                 Value="{Binding Shell.ActiveDocument.Settings.AnimationSpeed}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

@@ -37,7 +37,14 @@
                 <Separator />
                 <MenuItem Header="E_xit" Click="OnExitClick" />
             </MenuItem>
+            <MenuItem Header="_Presets">
+                <MenuItem Header="Fire / Campfire" Click="OnPresetFireClick" />
+                <MenuItem Header="Cosmic Vortex" Click="OnPresetCosmicVortexClick" />
+                <MenuItem Header="Smoke" Click="OnPresetSmokeClick" />
+                <MenuItem Header="Fountain" Click="OnPresetFountainClick" />
+            </MenuItem>
             <MenuItem Header="_View">
+                <MenuItem Header="Save Workspace Layout" Command="{Binding SaveWorkspaceLayoutCommand}" />
                 <MenuItem Header="Save Workspace Layout" Command="{Binding SaveWorkspaceLayoutCommand}" />
                 <MenuItem Header="Restore Workspace Layout" Command="{Binding RestoreWorkspaceLayoutCommand}" />
                 <MenuItem Header="Reset Workspace Layout" Command="{Binding ResetWorkspaceLayoutCommand}" />

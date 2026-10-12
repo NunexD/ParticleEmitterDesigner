@@ -40,6 +40,11 @@ public struct Particle
     // randomised at spawn) so particles don't all begin on frame 0.
     public float FrameOffset;
 
+    // Rotation of the particle's texture (radians) and its angular speed
+    // (radians / second). Advanced every frame by the emitter.
+    public float Rotation;
+    public float AngularVelocity;
+
     /// <summary>Normalised life in the range [0, 1].</summary>
     public readonly float LifeRatio => Lifespan > 0f ? Age / Lifespan : 1f;
 

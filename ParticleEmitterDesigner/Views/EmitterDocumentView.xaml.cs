@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Microsoft.Win32;
 using ParticleEmitterDesigner.ViewModels.Documents;
 
 namespace ParticleEmitterDesigner.Views;
@@ -32,6 +33,7 @@ public partial class EmitterDocumentView : UserControl
         if (_document is not null)
         {
             _document.PropertyChanged -= OnDocumentPropertyChanged;
+            _document.RequestSelectTexture = null;
         }
 
         _document = DataContext as EmitterDocumentViewModel;
@@ -40,11 +42,37 @@ public partial class EmitterDocumentView : UserControl
             Viewport.Emitter = _document.Emitter;
             Viewport.Sprite = _document.Sprite;
             _document.RequestResetView = ResetViewport;
+            _document.RequestSelectTexture = SelectTexture;
             _document.PropertyChanged += OnDocumentPropertyChanged;
         }
     }
 
     private void ResetViewport() => Viewport.ResetView();
+
+    private void SelectTexture()
+    {
+        if (_document is null)
+        {
+            return;
+        }
+
+        var dialog = new OpenFileDialog
+        {
+            Title = "Load particle texture",
+            Filter = "Image files (*.png;*.jpg;*.jpeg;*.bmp;*.gif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif|PNG (*.png)|*.png|All files (*.*)|*.*"
+        };
+
+        if (dialog.ShowDialog(Window.GetWindow(this)) != true)
+        {
+            return;
+        }
+
+        if (!_document.ApplyTexture(dialog.FileName))
+        {
+            MessageBox.Show(Window.GetWindow(this), "Could not load the texture image.",
+                "Load Texture", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     private void OnDocumentPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

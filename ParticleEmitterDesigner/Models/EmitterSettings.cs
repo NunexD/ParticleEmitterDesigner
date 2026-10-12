@@ -66,6 +66,12 @@ public partial class EmitterSettings : ObservableObject
     [ObservableProperty]
     private double _angularVelocity = 0;         // degrees / second of rotation
 
+    [ObservableProperty]
+    private double _initialRotation = 0;         // degrees; sprite rotation at spawn (0-360)
+
+    [ObservableProperty]
+    private double _rotationRandomness = 0;      // 0-1; scatters the initial rotation over +/- 180 deg
+
     // ----- Forces -----------------------------------------------------------
 
     [ObservableProperty]
@@ -142,6 +148,12 @@ public partial class EmitterSettings : ObservableObject
 
     [ObservableProperty]
     private double _animationSpeed = 1;          // full animation cycles over a particle's lifetime
+
+    [ObservableProperty]
+    private TextureMode _textureMode = TextureMode.ProceduralSoftGlow;
+
+    [ObservableProperty]
+    private string? _texturePath;               // source PNG for CustomTexture (nullable)
 
     // ----- End colour (RGBA, 0-255) ----------------------------------------
 

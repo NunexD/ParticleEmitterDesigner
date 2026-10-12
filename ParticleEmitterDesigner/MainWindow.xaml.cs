@@ -4,6 +4,7 @@ using AvalonDock;
 using AvalonDock.Layout.Serialization;
 using Microsoft.Win32;
 using ParticleEmitterDesigner.Controls;
+using ParticleEmitterDesigner.Models;
 using ParticleEmitterDesigner.Services;
 using ParticleEmitterDesigner.ViewModels;
 using ParticleEmitterDesigner.ViewModels.Documents;
@@ -218,6 +219,18 @@ public partial class MainWindow : Window
 
     private void OnExitClick(object sender, RoutedEventArgs e) => Close();
 
+    // ===================== Built-in presets =====================
+
+    private void OnPresetFireClick(object sender, RoutedEventArgs e) => ApplyPreset(PresetService.CreateFire());
+
+    private void OnPresetCosmicVortexClick(object sender, RoutedEventArgs e) => ApplyPreset(PresetService.CreateCosmicVortex());
+
+    private void OnPresetSmokeClick(object sender, RoutedEventArgs e) => ApplyPreset(PresetService.CreateSmoke());
+
+    private void OnPresetFountainClick(object sender, RoutedEventArgs e) => ApplyPreset(PresetService.CreateFountain());
+
+    private void ApplyPreset(EmitterSettings preset) => ActiveDocument?.ApplyPreset(preset);
+
     // ===================== Sprite =====================
 
     private void OnLoadSpriteClick(object sender, RoutedEventArgs e)
@@ -233,31 +246,16 @@ public partial class MainWindow : Window
             Filter = "Image files (*.png;*.jpg;*.jpeg;*.bmp;*.gif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif|PNG (*.png)|*.png|All files (*.*)|*.*"
         };
 
-        if (dialog.ShowDialog(this) == true)
+        if (dialog.ShowDialog(this) == true && !document.ApplyTexture(dialog.FileName))
         {
-            SpriteSheet? sheet = SpriteSheet.LoadFromFile(dialog.FileName);
-            if (sheet is not null)
-            {
-                document.Sprite = sheet;
-                document.SpriteFileName = Path.GetFileName(dialog.FileName);
-            }
-            else
-            {
-                MessageBox.Show(this, "Could not load the sprite sheet.", "Load Sprite",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            MessageBox.Show(this, "Could not load the sprite sheet.", "Load Sprite",
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
     private void OnResetSpriteClick(object sender, RoutedEventArgs e)
     {
-        if (ActiveDocument is not { } document)
-        {
-            return;
-        }
-
-        document.Sprite = SpriteSheet.CreateProcedural();
-        document.SpriteFileName = "Procedural (4x4)";
+        ActiveDocument?.ClearTextureCommand.Execute(null);
     }
 
     /// <summary>Ensures the Godot asset library folder exists and returns it.</summary>

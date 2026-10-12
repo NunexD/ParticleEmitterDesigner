@@ -55,6 +55,8 @@ public partial class EmitterDocumentViewModel : ObservableObject
         Emitter = new ParticleEmitter(Settings, seed: 1000 + _sequence);
         Settings.PropertyChanged += OnSettingsChanged;
 
+        SyncTextureFromSettings();
+
         _filePath = filePath;
         _title = filePath is null ? NextUntitledName() : Path.GetFileNameWithoutExtension(filePath);
     }
@@ -68,6 +70,12 @@ public partial class EmitterDocumentViewModel : ObservableObject
     /// </summary>
     public Action? RequestResetView { get; set; }
 
+    /// <summary>
+    /// Set by the view to open a texture file picker. The view owns the dialog;
+    /// this keeps the view model free of WPF dialog dependencies.
+    /// </summary>
+    public Action? RequestSelectTexture { get; set; }
+
     /// <summary>Shared parameter set bound to the inspector.</summary>
     public EmitterSettings Settings { get; }
 
@@ -79,6 +87,9 @@ public partial class EmitterDocumentViewModel : ObservableObject
 
     /// <summary>Emission shapes exposed to the inspector combo box.</summary>
     public Array EmissionShapes => Enum.GetValues<EmissionShapeType>();
+
+    /// <summary>Texture fill modes exposed to the inspector combo box.</summary>
+    public Array TextureModes => Enum.GetValues<TextureMode>();
 
     /// <summary>Advances the simulation and refreshes the HUD counters.</summary>
     public void Tick(double dt)
@@ -147,6 +158,50 @@ public partial class EmitterDocumentViewModel : ObservableObject
     [RelayCommand]
     private void Burst() => Emitter.EmitBurst(Settings.BurstCount);
 
+    /// <summary>Opens the texture file picker (implemented by the view).</summary>
+    [RelayCommand]
+    private void BrowseTexture() => RequestSelectTexture?.Invoke();
+
+    /// <summary>Reverts to the procedural soft-glow fill.</summary>
+    [RelayCommand]
+    private void ClearTexture()
+    {
+        Settings.TexturePath = null;
+        Settings.TextureMode = TextureMode.ProceduralSoftGlow;
+        SpriteFileName = "Procedural (soft glow)";
+    }
+
+    /// <summary>
+    /// Applies a built-in preset to this document in place, then reloads the
+    /// custom texture (if the preset references one).
+    /// </summary>
+    public void ApplyPreset(EmitterSettings preset)
+    {
+        ReplaceSettings(preset);
+        PresetFileName = "Preset: built-in";
+        IsDirty = true;
+    }
+
+    /// <summary>
+    /// Loads the image at <paramref name="path"/> as the custom particle texture
+    /// and switches the document into <see cref="TextureMode.CustomTexture"/>.
+    /// Returns false if the file could not be decoded.
+    /// </summary>
+    public bool ApplyTexture(string path)
+    {
+        SpriteSheet? sheet = SpriteSheet.LoadFromFile(path);
+        if (sheet is null)
+        {
+            return false;
+        }
+
+        Sprite = sheet;
+        SpriteFileName = Path.GetFileName(path);
+        Settings.TexturePath = path;
+        Settings.TextureMode = TextureMode.CustomTexture;
+        return true;
+    }
+
     private void ReplaceSettings(EmitterSettings loaded)
     {
         Settings.PropertyChanged -= OnSettingsChanged;
@@ -158,6 +213,33 @@ public partial class EmitterDocumentViewModel : ObservableObject
         Emitter.SetSettings(Settings);
         Emitter.EnsureCapacity(Settings.MaxParticles);
         Emitter.Reset();
+
+        SyncTextureFromSettings();
+    }
+
+    /// <summary>
+    /// Reloads the custom-texture sprite when the (possibly just loaded) settings
+    /// reference a Decodable PNG, so presets carry their texture with them.
+    /// </summary>
+    private void SyncTextureFromSettings()
+    {
+        if (Settings.TextureMode != TextureMode.CustomTexture)
+        {
+            return;
+        }
+
+        string? path = Settings.TexturePath;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return;
+        }
+
+        SpriteSheet? sheet = SpriteSheet.LoadFromFile(path!);
+        if (sheet is not null)
+        {
+            Sprite = sheet;
+            SpriteFileName = Path.GetFileName(path!);
+        }
     }
 
     private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)

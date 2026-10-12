@@ -214,6 +214,13 @@ public sealed class ParticleEmitter
         p.EndA = ToByte(_settings.EndA);
 
         p.FrameOffset = (float)(_random.NextDouble() * Math.Max(1.0, _settings.FrameCount));
+
+        // Initial sprite rotation (degrees -> radians) plus an optional scatter
+        // of up to +/- 180 degrees at full randomness. Angular speed is stored
+        // per particle so the renderer only reads the pooled struct.
+        double rotationJitter = (_random.NextDouble() * 2.0 - 1.0) * _settings.RotationRandomness * Math.PI;
+        p.Rotation = (float)(_settings.InitialRotation * Math.PI / 180.0 + rotationJitter);
+        p.AngularVelocity = (float)(_settings.AngularVelocity * Math.PI / 180.0);
     }
 
     private void Integrate(float dt)
@@ -294,6 +301,8 @@ public sealed class ParticleEmitter
 
             p.X += p.VelocityX * dt;
             p.Y += p.VelocityY * dt;
+
+            p.Rotation += p.AngularVelocity * dt;
         }
 
         _activeCount = count;
