@@ -138,6 +138,14 @@
                                                  Value="{Binding Shell.ActiveDocument.Settings.TurbulenceStrength}" />
                         <controls:PropertySlider Label="Turbulence Frequency" Minimum="0" Maximum="1"
                                                  Value="{Binding Shell.ActiveDocument.Settings.TurbulenceFrequency}" />
+
+                        <TextBlock Text="SPEED OVER LIFETIME" Style="{StaticResource GroupHeader}" />
+                        <CheckBox Content="Use Speed Curve"
+                                  Foreground="{StaticResource TextPrimary}"
+                                  IsChecked="{Binding Shell.ActiveDocument.Settings.UseSpeedCurve}"
+                                  Margin="0,2,0,4" />
+                        <controls:CurveEditorControl
+                            Curve="{Binding Shell.ActiveDocument.Settings.SpeedCurve}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

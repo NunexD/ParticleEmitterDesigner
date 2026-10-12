@@ -206,8 +206,25 @@ public sealed class ParticleEmitter
     Assign:
         p.X = (float)(OriginX + offX);
         p.Y = (float)(OriginY + offY);
-        p.VelocityX = (float)velX;
-        p.VelocityY = (float)velY;
+
+        // Speed-over-lifetime: when engaged, the spawn velocity is stored as the
+        // base (scaled by the curve each frame) and the live velocity starts at
+        // zero pending forces. Otherwise the spawn velocity is the live velocity
+        // (the legacy, curve-free path).
+        if (_settings.UseSpeedCurve && !_settings.SpeedCurve.IsFlat())
+        {
+            p.BaseVelocityX = (float)velX;
+            p.BaseVelocityY = (float)velY;
+            p.VelocityX = 0f;
+            p.VelocityY = 0f;
+        }
+        else
+        {
+            p.BaseVelocityX = 0f;
+            p.BaseVelocityY = 0f;
+            p.VelocityX = (float)velX;
+            p.VelocityY = (float)velY;
+        }
 
         p.Age = 0f;
         p.Lifespan = (float)Math.Max(0.0001, Lerp(_settings.LifespanMin, _settings.LifespanMax, _random.NextDouble()));
@@ -285,6 +302,12 @@ public sealed class ParticleEmitter
         bool useScaleCurve = _settings.UseScaleCurve;
         CurveData? scaleCurve = useScaleCurve ? _settings.ScaleCurve : null;
 
+        // Speed-over-lifetime: the curve scales the spawn velocity; forces act on
+        // the live velocity. Disabled or flat curves use a multiplier of 1.
+        CurveData? speedCurve = _settings.UseSpeedCurve && !_settings.SpeedCurve.IsFlat()
+            ? _settings.SpeedCurve
+            : null;
+
         int count = _activeCount;
 
         for (int i = 0; i < count; i++)
@@ -300,6 +323,8 @@ public sealed class ParticleEmitter
                 i--; // re-process the swapped-in particle
                 continue;
             }
+
+            float life = p.Lifespan > 0f ? p.Age / p.Lifespan : 1f;
 
             p.VelocityX += gx * dt;
             p.VelocityY += gy * dt;
@@ -342,12 +367,12 @@ public sealed class ParticleEmitter
             p.VelocityX *= dragFactor;
             p.VelocityY *= dragFactor;
 
-            p.X += p.VelocityX * dt;
-            p.Y += p.VelocityY * dt;
+            float speedScale = speedCurve is not null ? speedCurve.Evaluate(life) : 1f;
+
+            p.X += (p.BaseVelocityX * speedScale + p.VelocityX) * dt;
+            p.Y += (p.BaseVelocityY * speedScale + p.VelocityY) * dt;
 
             p.Rotation += p.AngularVelocity * dt;
-
-            float life = p.Lifespan > 0f ? p.Age / p.Lifespan : 1f;
 
             float baseScale = p.ScaleStart + (p.ScaleEnd - p.ScaleStart) * life;
             p.CurrentScale = scaleCurve is not null ? scaleCurve.Evaluate(life) * baseScale : baseScale;

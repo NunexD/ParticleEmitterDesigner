@@ -231,6 +231,24 @@ public sealed class CurveData
 
     public CurveData Clone() => new(_points);
 
+    /// <summary>
+    /// True when every control point sits at <paramref name="value"/> (within a
+    /// small tolerance), i.e. the curve is a constant with no effect.
+    /// </summary>
+    public bool IsFlat(float value = 1f)
+    {
+        const float tolerance = 1e-4f;
+        foreach (CurvePoint point in _points)
+        {
+            if (MathF.Abs(point.Y - value) > tolerance)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // ----- Presets ---------------------------------------------------------
 
     /// <summary>A constant curve (an identity multiplier by default).</summary>

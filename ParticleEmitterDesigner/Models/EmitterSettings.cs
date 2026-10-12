@@ -13,6 +13,7 @@ public partial class EmitterSettings : ObservableObject
     public EmitterSettings()
     {
         _scaleCurve.Changed += OnScaleCurveChanged;
+        _speedCurve.Changed += OnSpeedCurveChanged;
     }
 
     // ----- Emission ---------------------------------------------------------
@@ -79,6 +80,41 @@ public partial class EmitterSettings : ObservableObject
 
     [ObservableProperty]
     private double _rotationRandomness = 0;      // 0-1; scatters the initial rotation over +/- 180 deg
+
+    // Speed-over-lifetime: when enabled, SpeedCurve (a normalised multiplier)
+    // scales the particle's spawn velocity as it ages. Disabled by default so
+    // existing behaviour (constant speed plus forces) is unchanged.
+    [ObservableProperty]
+    private bool _useSpeedCurve = false;
+
+    private CurveData _speedCurve = CurveData.Flat();
+
+    /// <summary>
+    /// Speed-over-lifetime multiplier curve. When <see cref="UseSpeedCurve"/> is
+    /// true the emitter scales each particle's spawn velocity by this curve as it
+    /// ages (forces such as gravity are then added on top). A flat 1.0 curve
+    /// leaves the spawn velocity untouched.
+    /// </summary>
+    public CurveData SpeedCurve
+    {
+        get => _speedCurve;
+        set
+        {
+            CurveData incoming = value ?? CurveData.Flat();
+            if (ReferenceEquals(_speedCurve, incoming))
+            {
+                return;
+            }
+
+            _speedCurve.Changed -= OnSpeedCurveChanged;
+            _speedCurve = incoming.Clone();
+            _speedCurve.Changed += OnSpeedCurveChanged;
+            OnPropertyChanged(nameof(SpeedCurve));
+        }
+    }
+
+    private void OnSpeedCurveChanged(object? sender, EventArgs e) =>
+        OnPropertyChanged(nameof(SpeedCurve));
 
     // ----- Forces -----------------------------------------------------------
 

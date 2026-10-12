@@ -84,6 +84,16 @@ public static class GodotResourceExporter
         // Size-over-lifetime curve, emitted as a CurveTexture for scale_curve.
         AppendScaleCurve(sb, settings);
 
+        // Speed-over-lifetime curve: only emitted when the editor curve is
+        // actually in use (Godot's default is a constant speed), as a second
+        // Curve / CurveTexture pair referenced by velocity_curve.
+        bool emitVelocityCurve = settings.UseSpeedCurve && !settings.SpeedCurve.IsFlat();
+        if (emitVelocityCurve)
+        {
+            AppendCurveTexture(sb, "2_vel", "2_veltex", settings.SpeedCurve);
+            sb.AppendLine();
+        }
+
         sb.AppendLine("[resource]");
         sb.AppendLine($"emission_shape = {shape}");
         if (shape is 1 or 2)
@@ -130,6 +140,10 @@ public static class GodotResourceExporter
         sb.AppendLine($"scale_min = {F(scaleMin)}");
         sb.AppendLine($"scale_max = {F(scaleMax)}");
         sb.AppendLine("scale_curve = SubResource(\"1_scaletex\")");
+        if (emitVelocityCurve)
+        {
+            sb.AppendLine("velocity_curve = SubResource(\"2_veltex\")");
+        }
         // The ramp carries the authored colours, so the base modulation stays
         // white to avoid tinting the gradient twice.
         sb.AppendLine("color = Color(1, 1, 1, 1)");
@@ -225,7 +239,7 @@ public static class GodotResourceExporter
         double end = settings.ScaleEnd;
 
         CurveData? curve = settings.UseScaleCurve ? settings.ScaleCurve : null;
-        bool useCurve = curve is not null && !IsFlatIdentity(curve);
+        bool useCurve = curve is not null && !curve.IsFlat();
 
         sb.AppendLine("[sub_resource type=\"Curve\" id=\"1_scale\"]");
 
@@ -303,16 +317,55 @@ public static class GodotResourceExporter
         return hi - lo < 1e-9 ? 0.0 : (f(hi) - f(lo)) / (hi - lo);
     }
 
-    private static bool IsFlatIdentity(CurveData curve)
+    /// <summary>
+    /// Writes a <c>Curve</c> + <c>CurveTexture</c> sub-resource pair that mirrors
+    /// <paramref name="curve"/> one-to-one, storing each point's authored tangents
+    /// (slopes) so the exported velocity_curve matches the editor preview.
+    /// </summary>
+    private static void AppendCurveTexture(StringBuilder sb, string curveId, string textureId, CurveData curve)
     {
-        foreach (CurvePoint point in curve.Points)
+        var points = curve.Points;
+
+        double minValue = double.MaxValue;
+        double maxValue = double.MinValue;
+        foreach (CurvePoint point in points)
         {
-            if (Math.Abs(point.Y - 1f) > 1e-4)
-            {
-                return false;
-            }
+            minValue = Math.Min(minValue, point.Y);
+            maxValue = Math.Max(maxValue, point.Y);
         }
 
-        return true;
+        if (points.Count == 0)
+        {
+            minValue = 0.0;
+            maxValue = 1.0;
+        }
+        else if (maxValue - minValue < 1e-4)
+        {
+            minValue -= 0.5;
+            maxValue += 0.5;
+        }
+
+        sb.AppendLine($"[sub_resource type=\"Curve\" id=\"{curveId}\"]");
+        sb.AppendLine($"min_value = {F(minValue)}");
+        sb.AppendLine($"max_value = {F(maxValue)}");
+
+        var data = new StringBuilder();
+        for (int i = 0; i < points.Count; i++)
+        {
+            CurvePoint point = points[i];
+            if (i > 0)
+            {
+                data.Append(", ");
+            }
+
+            data.Append(
+                $"Vector2({F(point.X)}, {F(point.Y)}), {F(point.LeftTangent)}, {F(point.RightTangent)}, 0, 0");
+        }
+
+        sb.AppendLine($"_data = [{data}]");
+        sb.AppendLine($"point_count = {points.Count}");
+        sb.AppendLine();
+        sb.AppendLine($"[sub_resource type=\"CurveTexture\" id=\"{textureId}\"]");
+        sb.AppendLine($"curve = SubResource(\"{curveId}\")");
     }
 }

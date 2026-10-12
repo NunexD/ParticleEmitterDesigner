@@ -12,9 +12,16 @@ public struct Particle
     public float X;
     public float Y;
 
-    // Velocity (pixels / second).
+    // Velocity (pixels / second). When a speed-over-lifetime curve is engaged,
+    // this holds only the force-accumulated component; the spawn velocity lives
+    // in BaseVelocityX/Y and is scaled by the curve each frame.
     public float VelocityX;
     public float VelocityY;
+
+    // Spawn-time velocity, scaled by EmitterSettings.SpeedCurve as the particle
+    // ages. Zero when no speed curve is active (the legacy path).
+    public float BaseVelocityX;
+    public float BaseVelocityY;
 
     // Lifetime tracking (seconds).
     public float Age;
